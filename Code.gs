@@ -1,39 +1,45 @@
 /**
- * Secure Assessment Platform - Server-Side Backend
- * =================================================
+ * Secure Assessment Platform - Server Backend (Code.gs)
+ * ======================================================
  *
  * Google Apps Script Web App serving as the serverless backend.
- * Handles authentication, template injection, and secure serving.
+ * Features:
+ * - Secure config injection from PropertiesService
+ * - Dynamic RBAC via Firestore authorized_teachers lookup
+ * - Session-based authentication via Google Workspace
  *
- * Deployment Settings:
+ * Setup Instructions:
+ * 1. Go to Project Settings > Script Properties
+ * 2. Add the following properties:
+ *    - FIREBASE_CONFIG: JSON string of Firebase web config
+ *    - FIREBASE_PROJECT_ID: Your Firebase project ID
+ *    - FIREBASE_API_KEY: Firebase Web API Key (for REST calls)
+ *
+ * Deployment:
  * - Execute as: Me (the developer)
- * - Who has access: Anyone within [Organization] OR Anyone
- * - Note: For Google Workspace, use domain-restricted access
+ * - Who has access: Anyone in organization (or Anyone)
  *
- * @author Generated for Malvern Prep
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 // ============================================
-// CONFIGURATION CONSTANTS
+// CONFIGURATION
 // ============================================
-
-/**
- * Teacher/Admin email - SINGLE SOURCE OF TRUTH
- * This user has full administrative privileges
- * Must match the email in Firestore Security Rules
- */
-const TEACHER_EMAIL = 'sborish@malvernprep.org';
 
 /**
  * Application metadata
  */
 const APP_CONFIG = {
   title: 'Secure Assessment Platform',
-  version: '1.0.0',
-  organization: 'Malvern Prep',
-  supportEmail: 'sborish@malvernprep.org'
+  version: '2.0.0',
+  organization: 'Malvern Prep'
 };
+
+/**
+ * Cache duration for teacher authorization checks (seconds)
+ * Reduces Firestore reads for repeated requests
+ */
+const AUTH_CACHE_DURATION = 300; // 5 minutes
 
 // ============================================
 // MAIN WEB APP ENTRY POINT
@@ -42,117 +48,280 @@ const APP_CONFIG = {
 /**
  * doGet - Main entry point for the Web App
  *
- * This function is triggered when the Web App URL is accessed.
- * It performs the following:
- * 1. Captures the user's identity securely from Google Workspace
- * 2. Determines if the user is a teacher or student
- * 3. Injects necessary variables into the HTML template
- * 4. Serves the compiled HTML with proper security settings
+ * Flow:
+ * 1. Authenticate user via Google Workspace
+ * 2. Retrieve Firebase config from Script Properties
+ * 3. Check if user is authorized teacher via Firestore
+ * 4. Inject variables and serve the HTML
  *
- * @param {Object} e - Event object containing request parameters
- * @returns {HtmlOutput} - The rendered HTML page
+ * @param {Object} e - Event object with request parameters
+ * @returns {HtmlOutput} - Rendered HTML page
  */
 function doGet(e) {
   try {
     // ----------------------------------------
-    // STEP 1: Secure User Authentication
+    // STEP 1: Authenticate User
     // ----------------------------------------
-    // Session.getActiveUser() returns the user's Google account
-    // This is cryptographically secure and cannot be spoofed
-    // Returns empty string if accessed outside of Google Workspace context
     const activeUser = Session.getActiveUser();
     const userEmail = activeUser.getEmail();
 
-    // Handle edge case: No authenticated user
-    // This can happen if script permissions aren't properly configured
     if (!userEmail || userEmail === '') {
-      return createErrorPage('Authentication Error',
-        'Unable to verify your identity. Please ensure you are signed into your Google account and try again.');
+      return createErrorPage('Authentication Required',
+        'Please sign in with your Google account to access this application.');
+    }
+
+    console.log(`[ACCESS] User authenticated: ${userEmail}`);
+
+    // ----------------------------------------
+    // STEP 2: Retrieve Firebase Configuration
+    // ----------------------------------------
+    const firebaseConfig = getFirebaseConfig();
+    if (!firebaseConfig) {
+      console.error('[ERROR] Firebase configuration not found in Script Properties');
+      return createErrorPage('Configuration Error',
+        'The application is not properly configured. Please contact your administrator.');
     }
 
     // ----------------------------------------
-    // STEP 2: Role Determination
+    // STEP 3: Dynamic RBAC - Check Teacher Authorization
     // ----------------------------------------
-    // Compare user email against the designated teacher email
-    // Case-insensitive comparison for robustness
-    const isTeacher = (userEmail.toLowerCase() === TEACHER_EMAIL.toLowerCase());
+    const isTeacher = checkTeacherAuthorization(userEmail);
+    const userRole = isTeacher ? 'TEACHER' : 'STUDENT';
 
-    // Determine initial mode based on role
-    // - Teachers start in 'dashboard' mode
-    // - Students start in 'waiting' mode (until exam opens)
-    const initialMode = isTeacher ? 'dashboard' : 'waiting';
-
-    // Log access for auditing (visible in Apps Script Logs)
-    console.log(`[ACCESS] User: ${userEmail}, Role: ${isTeacher ? 'TEACHER' : 'STUDENT'}, Mode: ${initialMode}`);
+    console.log(`[RBAC] User: ${userEmail}, Role: ${userRole}`);
 
     // ----------------------------------------
-    // STEP 3: Template Creation & Variable Injection
+    // STEP 4: Create and Serve Template
     // ----------------------------------------
-    // Create template from Index.html file
     const template = HtmlService.createTemplateFromFile('Index');
 
-    // Inject server-side variables into the template
-    // These become available as <?= variableName ?> in the HTML
-    // CRITICAL: These values are computed server-side and cannot be tampered with
+    // Inject server-side variables (these CANNOT be tampered with)
     template.userEmail = userEmail;
     template.isTeacher = isTeacher;
-    template.initialMode = initialMode;
-
-    // Additional metadata injection
+    template.userRole = userRole;
+    template.firebaseConfig = JSON.stringify(firebaseConfig);
     template.appTitle = APP_CONFIG.title;
     template.appVersion = APP_CONFIG.version;
     template.serverTimestamp = new Date().toISOString();
 
-    // ----------------------------------------
-    // STEP 4: Evaluate Template & Configure Output
-    // ----------------------------------------
-    // Evaluate the template (processes <?= ?> scriptlets)
+    // Evaluate template and configure output
     const htmlOutput = template.evaluate();
-
-    // Set page title
     htmlOutput.setTitle(APP_CONFIG.title);
 
-    // CRITICAL SECURITY SETTING: XFrameOptionsMode
-    // ALLOWALL permits embedding in iframes (needed for some LMS integrations)
-    // If you don't need iframe embedding, use SAMEORIGIN for better security
+    // Allow iframe embedding for LMS integration
     htmlOutput.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 
-    // Set viewport for mobile/Chromebook compatibility
-    // This ensures proper rendering on various screen sizes
+    // Mobile/Chromebook viewport settings
     htmlOutput.addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-
-    // Additional meta tags for PWA-like behavior
     htmlOutput.addMetaTag('mobile-web-app-capable', 'yes');
     htmlOutput.addMetaTag('apple-mobile-web-app-capable', 'yes');
-    htmlOutput.addMetaTag('apple-mobile-web-app-status-bar-style', 'black-translucent');
 
     return htmlOutput;
 
   } catch (error) {
-    // Log error for debugging
     console.error('[ERROR] doGet failed:', error.toString(), error.stack);
-
-    // Return user-friendly error page
     return createErrorPage('Application Error',
-      'An unexpected error occurred. Please try again or contact support.');
+      'An unexpected error occurred. Please refresh and try again.');
   }
 }
 
 // ============================================
-// HELPER FUNCTIONS
+// FIREBASE CONFIGURATION
 // ============================================
 
 /**
- * Creates an error page with consistent styling
+ * Retrieves Firebase configuration from Script Properties
+ * NEVER hardcode API keys in source code
+ *
+ * @returns {Object|null} Firebase config object or null if not found
+ */
+function getFirebaseConfig() {
+  try {
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const configJson = scriptProperties.getProperty('FIREBASE_CONFIG');
+
+    if (!configJson) {
+      console.error('[CONFIG] FIREBASE_CONFIG not found in Script Properties');
+      return null;
+    }
+
+    const config = JSON.parse(configJson);
+
+    // Validate required fields
+    const requiredFields = ['apiKey', 'authDomain', 'projectId', 'storageBucket'];
+    for (const field of requiredFields) {
+      if (!config[field]) {
+        console.error(`[CONFIG] Missing required field: ${field}`);
+        return null;
+      }
+    }
+
+    return config;
+
+  } catch (error) {
+    console.error('[CONFIG] Failed to parse Firebase config:', error);
+    return null;
+  }
+}
+
+/**
+ * Gets the Firebase project ID from Script Properties
+ *
+ * @returns {string|null} Project ID or null
+ */
+function getFirebaseProjectId() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  return scriptProperties.getProperty('FIREBASE_PROJECT_ID');
+}
+
+/**
+ * Gets the Firebase API key from Script Properties
+ *
+ * @returns {string|null} API key or null
+ */
+function getFirebaseApiKey() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  return scriptProperties.getProperty('FIREBASE_API_KEY');
+}
+
+// ============================================
+// DYNAMIC RBAC - TEACHER AUTHORIZATION
+// ============================================
+
+/**
+ * Checks if a user is an authorized teacher
+ * Uses Firestore REST API to query authorized_teachers collection
+ *
+ * @param {string} email - User's email address
+ * @returns {boolean} True if user is an authorized teacher
+ */
+function checkTeacherAuthorization(email) {
+  // Check cache first
+  const cache = CacheService.getScriptCache();
+  const cacheKey = `teacher_auth_${email}`;
+  const cachedResult = cache.get(cacheKey);
+
+  if (cachedResult !== null) {
+    console.log(`[RBAC] Cache hit for ${email}: ${cachedResult}`);
+    return cachedResult === 'true';
+  }
+
+  // Query Firestore
+  const isAuthorized = queryFirestoreForTeacher(email);
+
+  // Cache the result
+  cache.put(cacheKey, isAuthorized.toString(), AUTH_CACHE_DURATION);
+  console.log(`[RBAC] Firestore query for ${email}: ${isAuthorized}`);
+
+  return isAuthorized;
+}
+
+/**
+ * Queries Firestore REST API to check if email exists in authorized_teachers
+ *
+ * @param {string} email - User's email to check
+ * @returns {boolean} True if document exists
+ */
+function queryFirestoreForTeacher(email) {
+  try {
+    const projectId = getFirebaseProjectId();
+    const apiKey = getFirebaseApiKey();
+
+    if (!projectId || !apiKey) {
+      console.error('[RBAC] Missing Firebase project ID or API key');
+      // Fallback: Check against hardcoded bootstrap admin
+      return checkBootstrapAdmin(email);
+    }
+
+    // Firestore REST API endpoint
+    // Document path: authorized_teachers/{email}
+    const documentPath = `authorized_teachers/${encodeURIComponent(email)}`;
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${documentPath}?key=${apiKey}`;
+
+    const response = UrlFetchApp.fetch(url, {
+      method: 'GET',
+      muteHttpExceptions: true
+    });
+
+    const statusCode = response.getResponseCode();
+
+    if (statusCode === 200) {
+      // Document exists - user is authorized
+      return true;
+    } else if (statusCode === 404) {
+      // Document not found - user is not authorized
+      return false;
+    } else {
+      console.error(`[RBAC] Firestore API error: ${statusCode} - ${response.getContentText()}`);
+      // On error, fallback to bootstrap admin check
+      return checkBootstrapAdmin(email);
+    }
+
+  } catch (error) {
+    console.error('[RBAC] Failed to query Firestore:', error);
+    // Fallback to bootstrap admin
+    return checkBootstrapAdmin(email);
+  }
+}
+
+/**
+ * Bootstrap admin check - fallback when Firestore is unavailable
+ * This allows initial setup before authorized_teachers collection exists
+ *
+ * IMPORTANT: Set BOOTSTRAP_ADMIN_EMAIL in Script Properties
+ *
+ * @param {string} email - Email to check
+ * @returns {boolean} True if bootstrap admin
+ */
+function checkBootstrapAdmin(email) {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const bootstrapAdmin = scriptProperties.getProperty('BOOTSTRAP_ADMIN_EMAIL');
+
+  if (bootstrapAdmin && email.toLowerCase() === bootstrapAdmin.toLowerCase()) {
+    console.log('[RBAC] Bootstrap admin access granted');
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Invalidates the authorization cache for a specific user
+ * Call this when teacher status changes
+ *
+ * @param {string} email - Email to invalidate
+ */
+function invalidateAuthCache(email) {
+  const cache = CacheService.getScriptCache();
+  cache.remove(`teacher_auth_${email}`);
+  console.log(`[RBAC] Cache invalidated for ${email}`);
+}
+
+/**
+ * Clears all authorization cache
+ * Useful for admin operations
+ */
+function clearAllAuthCache() {
+  // Note: CacheService doesn't support clearing all keys
+  // This is a placeholder for documentation
+  console.log('[RBAC] Manual cache clear requested');
+}
+
+// ============================================
+// ERROR HANDLING
+// ============================================
+
+/**
+ * Creates a styled error page
  *
  * @param {string} title - Error title
- * @param {string} message - Error message to display
- * @returns {HtmlOutput} - Styled error page
+ * @param {string} message - Error description
+ * @returns {HtmlOutput} Styled error page
  */
 function createErrorPage(title, message) {
   const errorHtml = `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -167,54 +336,54 @@ function createErrorPage(title, message) {
           align-items: center;
           justify-content: center;
           color: #fff;
+          padding: 20px;
         }
         .error-container {
           background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(10px);
           border-radius: 20px;
-          padding: 40px;
+          padding: 50px 40px;
           text-align: center;
           max-width: 500px;
-          margin: 20px;
           border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
         .error-icon {
-          font-size: 64px;
-          margin-bottom: 20px;
+          font-size: 72px;
+          margin-bottom: 25px;
         }
         h1 {
-          font-size: 24px;
+          font-size: 28px;
           margin-bottom: 15px;
           color: #ff6b6b;
         }
         p {
           font-size: 16px;
-          line-height: 1.6;
+          line-height: 1.7;
           color: rgba(255, 255, 255, 0.8);
-          margin-bottom: 25px;
+          margin-bottom: 30px;
         }
-        .retry-btn {
+        .btn {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
           border: none;
-          padding: 12px 30px;
-          border-radius: 25px;
+          padding: 14px 35px;
+          border-radius: 30px;
           font-size: 16px;
+          font-weight: 600;
           cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .retry-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-        .support-link {
-          margin-top: 20px;
-          font-size: 14px;
-          color: rgba(255, 255, 255, 0.6);
-        }
-        .support-link a {
-          color: #667eea;
+          transition: all 0.3s ease;
           text-decoration: none;
+          display: inline-block;
+        }
+        .btn:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .support {
+          margin-top: 25px;
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.5);
         }
       </style>
     </head>
@@ -223,9 +392,9 @@ function createErrorPage(title, message) {
         <div class="error-icon">⚠️</div>
         <h1>${title}</h1>
         <p>${message}</p>
-        <button class="retry-btn" onclick="location.reload()">Try Again</button>
-        <div class="support-link">
-          Need help? Contact <a href="mailto:${APP_CONFIG.supportEmail}">${APP_CONFIG.supportEmail}</a>
+        <button class="btn" onclick="location.reload()">Try Again</button>
+        <div class="support">
+          Need help? Contact your system administrator.
         </div>
       </div>
     </body>
@@ -238,110 +407,138 @@ function createErrorPage(title, message) {
   return output;
 }
 
+// ============================================
+// HTML INCLUDE UTILITY
+// ============================================
+
 /**
  * Include function for modular HTML
- * Allows splitting HTML into multiple files if needed
+ * Usage in HTML: <?!= include('filename') ?>
  *
- * Usage in HTML: <?!= include('Filename') ?>
- *
- * @param {string} filename - Name of the file to include (without .html)
- * @returns {string} - Contents of the file
+ * @param {string} filename - Name of file to include (without .html)
+ * @returns {string} File contents
  */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 // ============================================
-// SERVER-SIDE API FUNCTIONS (Called from client)
+// SERVER-SIDE API (Called from client)
 // ============================================
 
 /**
- * Gets the current user's email
- * Can be called from client-side JavaScript via google.script.run
+ * Gets current user email (can be called from client)
  *
- * @returns {string} - User's email address
+ * @returns {string} User's email
  */
 function getUserEmail() {
   return Session.getActiveUser().getEmail();
 }
 
 /**
- * Checks if the current user is a teacher
+ * Checks if current user is a teacher (can be called from client)
+ * Uses cached authorization check
  *
- * @returns {boolean} - True if user is the designated teacher
+ * @returns {boolean} True if teacher
  */
 function checkIsTeacher() {
   const email = Session.getActiveUser().getEmail();
-  return email.toLowerCase() === TEACHER_EMAIL.toLowerCase();
+  return checkTeacherAuthorization(email);
 }
 
 /**
- * Gets server timestamp
- * Useful for synchronizing client time with server
+ * Gets server timestamp for synchronization
  *
- * @returns {string} - ISO formatted timestamp
+ * @returns {string} ISO timestamp
  */
 function getServerTimestamp() {
   return new Date().toISOString();
 }
 
 /**
- * Logs an audit event
- * Creates a record in the Apps Script logs
+ * Logs an audit event (called from client for important actions)
  *
- * @param {string} action - The action being logged
- * @param {Object} details - Additional details about the action
+ * @param {string} action - Action description
+ * @param {Object} details - Additional details
+ * @returns {Object} Result with timestamp
  */
 function logAuditEvent(action, details) {
   const email = Session.getActiveUser().getEmail();
   const timestamp = new Date().toISOString();
 
-  console.log(`[AUDIT] ${timestamp} | ${email} | ${action} | ${JSON.stringify(details)}`);
+  console.log(`[AUDIT] ${timestamp} | ${email} | ${action} | ${JSON.stringify(details || {})}`);
 
-  return {
-    success: true,
-    timestamp: timestamp
-  };
+  return { success: true, timestamp: timestamp };
 }
 
 // ============================================
-// DEVELOPMENT & TESTING UTILITIES
+// ADMIN UTILITIES
 // ============================================
 
 /**
- * Test function to verify deployment
- * Run this from the Apps Script editor to test configuration
+ * Sets up initial Firebase configuration
+ * Run this once from the Apps Script editor
+ *
+ * @param {Object} config - Firebase config object
  */
-function testDeployment() {
-  console.log('=== Deployment Test ===');
-  console.log('Teacher Email:', TEACHER_EMAIL);
-  console.log('App Config:', JSON.stringify(APP_CONFIG));
+function setupFirebaseConfig(config) {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  scriptProperties.setProperty('FIREBASE_CONFIG', JSON.stringify(config));
+  scriptProperties.setProperty('FIREBASE_PROJECT_ID', config.projectId);
+  scriptProperties.setProperty('FIREBASE_API_KEY', config.apiKey);
+  console.log('[SETUP] Firebase configuration saved');
+}
 
-  // Test user detection
+/**
+ * Sets the bootstrap admin email
+ * This user will have admin access even if Firestore is unavailable
+ *
+ * @param {string} email - Admin email
+ */
+function setBootstrapAdmin(email) {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  scriptProperties.setProperty('BOOTSTRAP_ADMIN_EMAIL', email);
+  console.log('[SETUP] Bootstrap admin set to:', email);
+}
+
+/**
+ * Test function to verify configuration
+ * Run from Apps Script editor
+ */
+function testConfiguration() {
+  console.log('=== Configuration Test ===');
+
+  // Test Firebase config
+  const config = getFirebaseConfig();
+  console.log('Firebase Config:', config ? 'Found' : 'MISSING');
+  if (config) {
+    console.log('  Project ID:', config.projectId);
+  }
+
+  // Test user session
   const email = Session.getActiveUser().getEmail();
-  console.log('Current User:', email);
-  console.log('Is Teacher:', email.toLowerCase() === TEACHER_EMAIL.toLowerCase());
+  console.log('Current User:', email || 'Not authenticated');
 
-  // Test template
-  try {
-    const template = HtmlService.createTemplateFromFile('Index');
-    console.log('Template loaded successfully');
-  } catch (e) {
-    console.error('Template error:', e);
+  // Test teacher check
+  if (email) {
+    const isTeacher = checkTeacherAuthorization(email);
+    console.log('Is Teacher:', isTeacher);
   }
 
   console.log('=== Test Complete ===');
 }
 
 /**
- * Utility to get script properties
- * For debugging deployment issues
+ * Displays current Script Properties (for debugging)
+ * WARNING: Contains sensitive data - use carefully
  */
-function getDeploymentInfo() {
-  return {
-    scriptId: ScriptApp.getScriptId(),
-    timeZone: Session.getScriptTimeZone(),
-    activeUserEmail: Session.getActiveUser().getEmail(),
-    effectiveUserEmail: Session.getEffectiveUser().getEmail()
-  };
+function showScriptProperties() {
+  const props = PropertiesService.getScriptProperties().getProperties();
+  for (const key in props) {
+    if (key.includes('KEY') || key.includes('SECRET')) {
+      console.log(`${key}: [REDACTED]`);
+    } else {
+      console.log(`${key}: ${props[key]}`);
+    }
+  }
 }

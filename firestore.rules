@@ -1,18 +1,25 @@
 rules_version = '2';
 
 /**
- * Firestore Security Rules for Secure Assessment Platform
- * ========================================================
+ * Firestore Security Rules - Secure Assessment Platform v2.0
+ * ===========================================================
  *
- * Collections Structure:
- * - quiz_state/global          : Global exam state (isOpen, etc.)
- * - students/{email}           : Student profiles & status
- * - responses/{email}          : Student exam responses
+ * Schema Overview:
+ * ├── sys_admin/
+ * │   └── config                    : Global settings (teacher-read only)
+ * │   └── global_state              : Current active quiz state
+ * ├── authorized_teachers/{email}   : Teacher whitelist (RBAC)
+ * ├── quizzes/{quizId}/             : Quiz metadata
+ * │   └── questions/{questionId}    : Quiz questions with images
+ * ├── sessions/{quizId}/
+ * │   └── students/{email}          : Live session state per student
+ * └── responses/{quizId}/
+ *     └── students/{email}          : Student responses with metacognition
  *
  * Security Model:
- * - Teacher Superuser has full access to everything
- * - Students have limited, scoped access to their own data
- * - Critical: Submission lock prevents blocked students from writing
+ * - Teachers: Verified via authorized_teachers collection (dynamic RBAC)
+ * - Students: Scoped access to open quizzes and their own data
+ * - Submission Lock: Blocked students cannot write responses
  */
 
 service cloud.firestore {
@@ -23,118 +30,228 @@ service cloud.firestore {
     // ============================================
 
     /**
-     * Checks if the requesting user is the designated Teacher/Admin
-     * This is the single source of truth for admin privileges
+     * Checks if the user is authenticated
      */
-    function isTeacher() {
-      return request.auth != null &&
-             request.auth.token.email == 'sborish@malvernprep.org';
+    function isAuthenticated() {
+      return request.auth != null && request.auth.token.email != null;
     }
 
     /**
-     * Checks if the requesting user owns the document
-     * Compares authenticated email against document ID (email-based)
+     * Extracts the user's email from the auth token
+     */
+    function getUserEmail() {
+      return request.auth.token.email;
+    }
+
+    /**
+     * Sanitizes email for document ID (replaces . with _)
+     */
+    function sanitizeEmail(email) {
+      return email.replace('.', '_');
+    }
+
+    /**
+     * Dynamic RBAC: Checks if the user exists in authorized_teachers collection
+     * This is the PRIMARY authorization check for teacher privileges
+     */
+    function isAuthorizedTeacher() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/authorized_teachers/$(request.auth.token.email));
+    }
+
+    /**
+     * Checks if the user owns the document (email-based)
      */
     function isOwner(email) {
-      return request.auth != null &&
-             request.auth.token.email == email;
+      return isAuthenticated() && getUserEmail() == email;
     }
 
     /**
-     * Checks if a student is currently blocked
-     * Used for the critical submission lock mechanism
-     * Returns true if student status is 'blocked', preventing writes
+     * Checks if a quiz is currently OPEN for students
      */
-    function isStudentBlocked(email) {
-      return exists(/databases/$(database)/documents/students/$(email)) &&
-             get(/databases/$(database)/documents/students/$(email)).data.status == 'blocked';
+    function isQuizOpen(quizId) {
+      return exists(/databases/$(database)/documents/quizzes/$(quizId)) &&
+             get(/databases/$(database)/documents/quizzes/$(quizId)).data.status == 'OPEN';
     }
 
     /**
-     * Validates that the incoming data has required fields
-     * Prevents malformed documents from being written
+     * Checks if a student is blocked in a specific quiz session
      */
-    function hasRequiredStudentFields() {
-      return request.resource.data.keys().hasAny(['email', 'status', 'examVersion']);
+    function isStudentBlocked(quizId, email) {
+      let sessionPath = /databases/$(database)/documents/sessions/$(quizId)/students/$(email);
+      return exists(sessionPath) &&
+             get(sessionPath).data.status == 'blocked';
     }
 
     /**
-     * Validates response document structure
+     * Validates required fields for response submission
      */
-    function hasRequiredResponseFields() {
-      return request.resource.data.keys().hasAny(['answer', 'timestamp']);
+    function hasValidResponseFields() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['answer', 'confidence', 'submittedAt']) &&
+             data.confidence is int &&
+             data.confidence >= 1 &&
+             data.confidence <= 4;
     }
 
     // ============================================
-    // QUIZ STATE COLLECTION
+    // SYSTEM ADMIN COLLECTION
     // ============================================
 
     /**
-     * quiz_state/global - Controls exam availability
+     * sys_admin/{docId} - Global system configuration
+     *
+     * Documents:
+     * - config: Firebase settings, feature flags
+     * - global_state: Current active quiz ID, system status
+     *
+     * Access:
+     * - Teachers: Read only (for config)
+     * - Students: Read global_state only (to know which quiz is active)
+     * - Write: Teachers only
+     */
+    match /sys_admin/{docId} {
+      // Teachers can read all sys_admin documents
+      allow read: if isAuthorizedTeacher();
+
+      // Teachers can write to sys_admin
+      allow write: if isAuthorizedTeacher();
+
+      // Students can only read global_state to know which quiz is active
+      allow read: if isAuthenticated() && docId == 'global_state';
+    }
+
+    // ============================================
+    // AUTHORIZED TEACHERS COLLECTION (RBAC)
+    // ============================================
+
+    /**
+     * authorized_teachers/{email} - Teacher whitelist
      *
      * Document Structure:
      * {
-     *   isOpen: boolean,        // Whether exam is accepting responses
-     *   openedAt: timestamp,    // When exam was opened
-     *   closedAt: timestamp     // When exam was closed
+     *   email: string,
+     *   displayName: string,
+     *   role: 'admin' | 'teacher',
+     *   addedBy: string,
+     *   addedAt: timestamp
      * }
      *
      * Access:
-     * - Teacher: Full read/write
-     * - Students: Read only (to know if exam is open)
+     * - Existing Teachers: Full read/write (can add/remove other teachers)
+     * - Students: No access
+     *
+     * Bootstrap: First teacher must be added via Firebase Console
      */
-    match /quiz_state/{docId} {
-      // Teacher has full control over quiz state
-      allow read, write: if isTeacher();
+    match /authorized_teachers/{email} {
+      // Only existing authorized teachers can read the whitelist
+      allow read: if isAuthorizedTeacher();
 
-      // Students can ONLY read the global state document
-      // They need this to know when the exam opens/closes
-      // CRITICAL: Students can NEVER modify quiz state
-      allow read: if request.auth != null && docId == 'global';
+      // Only authorized teachers can modify the whitelist
+      // This creates a self-governing admin system
+      allow write: if isAuthorizedTeacher();
 
-      // Explicitly deny all student writes
-      allow write: if false;
+      // Prevent deletion of last admin (optional safety)
+      // Note: Additional validation should be in app logic
     }
 
     // ============================================
-    // STUDENTS COLLECTION
+    // QUIZZES COLLECTION
     // ============================================
 
     /**
-     * students/{email} - Student profiles and exam status
+     * quizzes/{quizId} - Quiz metadata and configuration
      *
      * Document Structure:
      * {
-     *   email: string,           // Student email (matches doc ID)
-     *   displayName: string,     // Student's display name
-     *   examVersion: number,     // Assigned exam version (1-5)
-     *   status: string,          // 'active' | 'blocked'
-     *   joinedAt: timestamp,     // When student first connected
-     *   violations: array,       // Array of violation timestamps
-     *   lastActivity: timestamp  // Last activity timestamp
+     *   title: string,
+     *   description: string,
+     *   status: 'DRAFT' | 'OPEN' | 'CLOSED',
+     *   createdBy: string (teacher email),
+     *   createdAt: timestamp,
+     *   updatedAt: timestamp,
+     *   settings: {
+     *     shuffleQuestions: boolean,
+     *     shuffleOptions: boolean,
+     *     showResults: boolean
+     *   }
      * }
      *
      * Access:
-     * - Teacher: Full read/write (can unblock students, view all)
-     * - Students: Read/write ONLY their own document
+     * - Teachers: Full read/write
+     * - Students: Read only if status is 'OPEN'
      */
-    match /students/{email} {
-      // Teacher Superuser: Full access to all student documents
-      // Needed for: viewing roster, unblocking students, monitoring
-      allow read, write: if isTeacher();
+    match /quizzes/{quizId} {
+      // Teachers have full access to all quizzes
+      allow read, write: if isAuthorizedTeacher();
 
-      // Students can read their own document
-      // Needed for: checking their status, loading their exam version
+      // Students can only read OPEN quizzes
+      allow read: if isAuthenticated() &&
+                     resource.data.status == 'OPEN';
+    }
+
+    /**
+     * quizzes/{quizId}/questions/{questionId} - Quiz questions
+     *
+     * Document Structure:
+     * {
+     *   order: number,
+     *   text: string,
+     *   imageUrl: string (optional),
+     *   options: [
+     *     { id: string, text: string, imageUrl: string, isCorrect: boolean }
+     *   ],
+     *   createdAt: timestamp,
+     *   updatedAt: timestamp
+     * }
+     *
+     * Access:
+     * - Teachers: Full read/write
+     * - Students: Read only if parent quiz is OPEN
+     */
+    match /quizzes/{quizId}/questions/{questionId} {
+      // Teachers have full access
+      allow read, write: if isAuthorizedTeacher();
+
+      // Students can read questions only if the quiz is OPEN
+      allow read: if isAuthenticated() && isQuizOpen(quizId);
+    }
+
+    // ============================================
+    // SESSIONS COLLECTION (Live Proctoring)
+    // ============================================
+
+    /**
+     * sessions/{quizId}/students/{email} - Live session state
+     *
+     * Document Structure:
+     * {
+     *   email: string,
+     *   displayName: string,
+     *   status: 'active' | 'blocked' | 'completed',
+     *   connectedAt: timestamp,
+     *   lastHeartbeat: timestamp,
+     *   violations: [
+     *     { type: string, timestamp: timestamp, details: string }
+     *   ],
+     *   currentQuestion: number,
+     *   progress: number (0-100)
+     * }
+     *
+     * Access:
+     * - Teachers: Full read/write (can unblock, monitor)
+     * - Students: Read/write their own document only
+     */
+    match /sessions/{quizId}/students/{email} {
+      // Teachers have full access for proctoring
+      allow read, write: if isAuthorizedTeacher();
+
+      // Students can read their own session state
       allow read: if isOwner(email);
 
-      // Students can write to their own document with restrictions
-      // This allows: setting initial data, updating status (for blocking)
-      // The client handles blocking - we allow it for the visibility listener
-      allow write: if isOwner(email) &&
-                      request.auth != null;
-
-      // Students cannot read other students' documents
-      // This is implicitly denied by the isOwner check above
+      // Students can write to their own session (for heartbeat, violations)
+      // This allows the client to update status when a violation occurs
+      allow write: if isOwner(email) && isAuthenticated();
     }
 
     // ============================================
@@ -142,88 +259,123 @@ service cloud.firestore {
     // ============================================
 
     /**
-     * responses/{email} - Student exam submissions
+     * responses/{quizId}/students/{email} - Student submissions
      *
      * Document Structure:
      * {
-     *   email: string,           // Student email (matches doc ID)
-     *   examVersion: number,     // Which exam version they had
-     *   answers: map,            // { questionId: selectedAnswer }
-     *   submittedAt: timestamp,  // Submission timestamp
-     *   clientInfo: map          // Browser/device info for auditing
+     *   email: string,
+     *   quizId: string,
+     *   answers: {
+     *     [questionId]: {
+     *       answer: string,
+     *       isCorrect: boolean,
+     *       confidence: number (1-4),
+     *       answeredAt: timestamp
+     *     }
+     *   },
+     *   totalScore: number,
+     *   totalQuestions: number,
+     *   completedAt: timestamp,
+     *   violationLog: array
      * }
      *
      * Access:
-     * - Teacher: Full read/write (for grading, auditing)
-     * - Students: Read/write ONLY their own document
-     * - CRITICAL: Blocked students CANNOT write (anti-cheat)
+     * - Teachers: Full read/write (for grading)
+     * - Students: Write their own (if not blocked), read after completion
+     * - CRITICAL: Blocked students CANNOT write
      */
-    match /responses/{email} {
-      // Teacher Superuser: Full access for grading and auditing
-      allow read, write: if isTeacher();
+    match /responses/{quizId}/students/{email} {
+      // Teachers have full access for grading and review
+      allow read, write: if isAuthorizedTeacher();
 
-      // Students can read their own responses
-      // Useful for: confirming submission, review mode
+      // Students can read their own responses (after submission)
       allow read: if isOwner(email);
 
       // CRITICAL SECURITY RULE: Submission Lock
       // ========================================
-      // A student can ONLY write to their responses if:
-      // 1. They own the document (email matches)
-      // 2. They are NOT blocked in the students collection
+      // Students can ONLY write if:
+      // 1. They own the document
+      // 2. The quiz is OPEN
+      // 3. They are NOT blocked in the session
       //
-      // This server-side rule prevents:
-      // - Blocked students from submitting via console hacks
-      // - "Inspect Element" deletion attacks on client-side blocks
-      // - Any client-side bypass attempts
-      //
-      // The isStudentBlocked() function performs a cross-collection
-      // read to verify the student's current status before allowing writes
+      // This server-side enforcement prevents:
+      // - Console hacks trying to submit after being blocked
+      // - Inspect Element attacks on client-side locks
+      // - Any client bypass attempts
       allow write: if isOwner(email) &&
-                      request.auth != null &&
-                      !isStudentBlocked(email);
+                      isAuthenticated() &&
+                      isQuizOpen(quizId) &&
+                      !isStudentBlocked(quizId, email);
+
+      // Alternative: Allow create but check blocking
+      allow create: if isOwner(email) &&
+                       isAuthenticated() &&
+                       isQuizOpen(quizId) &&
+                       !isStudentBlocked(quizId, email);
+
+      // Allow updates only if not blocked
+      allow update: if isOwner(email) &&
+                       isAuthenticated() &&
+                       !isStudentBlocked(quizId, email);
     }
 
     // ============================================
-    // AUDIT LOG COLLECTION (Optional - for compliance)
+    // AUDIT LOG COLLECTION
     // ============================================
 
     /**
-     * audit_log/{logId} - Security and activity audit trail
+     * audit_log/{logId} - Immutable audit trail
      *
      * Document Structure:
      * {
-     *   email: string,           // Who performed the action
-     *   action: string,          // What action was taken
-     *   timestamp: timestamp,    // When it happened
-     *   details: map             // Additional context
+     *   email: string,
+     *   action: string,
+     *   quizId: string,
+     *   timestamp: timestamp,
+     *   details: map,
+     *   ipHash: string (for privacy)
      * }
      *
      * Access:
-     * - Teacher: Full read/write
-     * - Students: Write only (append-only log)
+     * - Teachers: Full read, append-only write
+     * - Students: Append-only (create their own entries)
      */
     match /audit_log/{logId} {
-      // Teacher can read all audit logs
-      allow read, write: if isTeacher();
+      // Teachers can read all audit logs
+      allow read: if isAuthorizedTeacher();
 
-      // Students can only create audit entries (append-only)
-      // They cannot read or modify existing entries
-      // This creates an immutable audit trail
-      allow create: if request.auth != null &&
-                       request.resource.data.email == request.auth.token.email;
+      // Teachers can create audit entries
+      allow create: if isAuthorizedTeacher();
 
-      // Explicitly deny read, update, delete for students
-      allow read, update, delete: if false;
+      // Students can only create entries for themselves (append-only)
+      allow create: if isAuthenticated() &&
+                       request.resource.data.email == getUserEmail();
+
+      // No updates or deletes allowed - immutable log
+      allow update, delete: if false;
     }
 
     // ============================================
-    // DEFAULT DENY
+    // ANALYTICS COLLECTION (Teacher-Only)
     // ============================================
 
     /**
-     * Catch-all rule: Deny access to any undefined collections
-     * This is a security best practice - explicit deny by default
+     * analytics/{quizId} - Aggregated quiz analytics
+     *
+     * Stores pre-computed analytics for "The Matrix" view
+     */
+    match /analytics/{quizId} {
+      // Only teachers can read/write analytics
+      allow read, write: if isAuthorizedTeacher();
+    }
+
+    // ============================================
+    // DEFAULT DENY RULE
+    // ============================================
+
+    /**
+     * Catch-all: Deny access to any undefined collections
+     * Security best practice - explicit deny by default
      */
     match /{document=**} {
       allow read, write: if false;

@@ -1,0 +1,196 @@
+rules_version = '2';
+
+/**
+ * Firebase Storage Security Rules - Secure Assessment Platform
+ * =============================================================
+ *
+ * Storage Structure:
+ * /quizzes/{quizId}/questions/{filename}  - Question images
+ * /quizzes/{quizId}/options/{filename}    - Answer option images
+ * /temp/{userId}/{filename}               - Temporary uploads
+ *
+ * Security Model:
+ * - Teachers: Full upload access to quiz content
+ * - Students: Read-only access to quiz images
+ * - File validation: Only images, max 5MB
+ */
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    /**
+     * Check if user is authenticated
+     */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /**
+     * Get the user's email from auth token
+     */
+    function getUserEmail() {
+      return request.auth.token.email;
+    }
+
+    /**
+     * Check if user is an authorized teacher
+     * Note: Storage rules cannot query Firestore directly
+     * We use a custom claim approach or verify via app logic
+     * For this implementation, we check a custom claim 'teacher'
+     *
+     * IMPORTANT: Set custom claims via Firebase Admin SDK:
+     * admin.auth().setCustomUserClaims(uid, { teacher: true })
+     */
+    function isTeacher() {
+      return isAuthenticated() &&
+             request.auth.token.teacher == true;
+    }
+
+    /**
+     * Alternative: Check by email domain (if all teachers share domain)
+     * Uncomment if using domain-based verification
+     */
+    // function isTeacherByDomain() {
+    //   return isAuthenticated() &&
+    //          getUserEmail().matches('.*@malvernprep\\.org$');
+    // }
+
+    /**
+     * Validate that the file is an image
+     */
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    /**
+     * Validate file size (max 5MB)
+     */
+    function isValidSize() {
+      return request.resource.size <= 5 * 1024 * 1024;
+    }
+
+    /**
+     * Validate file extension
+     */
+    function hasValidExtension(filename) {
+      return filename.matches('.*\\.(jpg|jpeg|png|gif|webp|svg)$');
+    }
+
+    // ============================================
+    // QUIZ CONTENT IMAGES
+    // ============================================
+
+    /**
+     * /quizzes/{quizId}/questions/{filename}
+     *
+     * Question images uploaded by teachers
+     *
+     * Access:
+     * - Teachers: Full read/write
+     * - Students: Read only (to display questions)
+     */
+    match /quizzes/{quizId}/questions/{filename} {
+      // Anyone authenticated can read quiz images
+      // This allows students to view question images
+      allow read: if isAuthenticated();
+
+      // Only teachers can upload question images
+      // Validates: must be an image, max 5MB
+      allow write: if isTeacher() &&
+                      isImage() &&
+                      isValidSize();
+
+      // Teachers can delete images
+      allow delete: if isTeacher();
+    }
+
+    /**
+     * /quizzes/{quizId}/options/{filename}
+     *
+     * Answer option images uploaded by teachers
+     *
+     * Access:
+     * - Teachers: Full read/write
+     * - Students: Read only (to display options)
+     */
+    match /quizzes/{quizId}/options/{filename} {
+      // Anyone authenticated can read option images
+      allow read: if isAuthenticated();
+
+      // Only teachers can upload option images
+      allow write: if isTeacher() &&
+                      isImage() &&
+                      isValidSize();
+
+      // Teachers can delete images
+      allow delete: if isTeacher();
+    }
+
+    // ============================================
+    // TEMPORARY UPLOAD FOLDER
+    // ============================================
+
+    /**
+     * /temp/{userId}/{filename}
+     *
+     * Temporary storage for uploads during quiz creation
+     * Files should be moved to permanent location after processing
+     *
+     * Access:
+     * - Users can only access their own temp folder
+     */
+    match /temp/{userId}/{filename} {
+      // Users can only access their own temp folder
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == userId;
+
+      // Teachers can upload to their own temp folder
+      allow write: if isTeacher() &&
+                      request.auth.uid == userId &&
+                      isImage() &&
+                      isValidSize();
+
+      // Users can delete their own temp files
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == userId;
+    }
+
+    // ============================================
+    // PUBLIC ASSETS (Optional)
+    // ============================================
+
+    /**
+     * /public/{filename}
+     *
+     * Publicly accessible assets (logos, help images, etc.)
+     * Only teachers can upload, anyone can read
+     */
+    match /public/{filename} {
+      // Anyone can read public assets (even unauthenticated)
+      allow read: if true;
+
+      // Only teachers can upload public assets
+      allow write: if isTeacher() &&
+                      isImage() &&
+                      isValidSize();
+
+      // Teachers can delete public assets
+      allow delete: if isTeacher();
+    }
+
+    // ============================================
+    // DEFAULT DENY
+    // ============================================
+
+    /**
+     * Catch-all: Deny access to undefined paths
+     */
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
