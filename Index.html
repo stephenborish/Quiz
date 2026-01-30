@@ -1623,10 +1623,10 @@
     }
 
     /**
-     * Sanitize email for document ID
+     * Normalize email for document ID consistency
      */
-    function sanitizeEmail(email) {
-      return email.toLowerCase().replace(/[.#$\/\[\]]/g, '_');
+    function docIdFromEmail(email) {
+      return (email || '').trim().toLowerCase();
     }
 
     /**
@@ -2466,7 +2466,7 @@ async function initializeApp() {
     async function registerStudent() {
       if (!AppState.currentQuizId) return;
 
-      const studentDocId = sanitizeEmail(USER_EMAIL);
+      const studentDocId = docIdFromEmail(USER_EMAIL);
 
       try {
         const sessionRef = db.collection('sessions').doc(AppState.currentQuizId)
@@ -2564,7 +2564,7 @@ async function initializeApp() {
         }
 
         // Check for existing responses
-        const studentDocId = sanitizeEmail(USER_EMAIL);
+        const studentDocId = docIdFromEmail(USER_EMAIL);
         const responseDoc = await db.collection('responses').doc(quizId)
           .collection('students').doc(studentDocId).get();
 
@@ -2618,7 +2618,7 @@ async function initializeApp() {
       const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
       document.getElementById('optionsList').innerHTML = shuffledOptions.map((opt, idx) => `
-        <button class="option-btn" onclick="selectAnswer('${opt.id}', '${(opt.text || '').replace(/'/g, "\\'")}')">
+        <button class="option-btn" onclick="selectAnswer(this, '${opt.id}', '${(opt.text || '').replace(/'/g, "\\'")}')">
           <span class="option-letter">${letters[idx]}</span>
           <div class="option-content">
             <span>${opt.text || 'Option'}</span>
@@ -2630,7 +2630,7 @@ async function initializeApp() {
       AppState.selectedAnswer = null;
     }
 
-    function selectAnswer(optionId, optionText) {
+    function selectAnswer(buttonEl, optionId, optionText) {
       if (AppState.isBlocked) return;
 
       AppState.selectedAnswer = {
@@ -2640,7 +2640,9 @@ async function initializeApp() {
 
       // Update UI
       document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
+      if (buttonEl) {
+        buttonEl.classList.add('selected');
+      }
 
       // Show metacognition modal
       document.getElementById('selectedAnswerPreview').textContent = optionText;
@@ -2683,7 +2685,7 @@ async function initializeApp() {
       };
 
       try {
-        const studentDocId = sanitizeEmail(USER_EMAIL);
+        const studentDocId = docIdFromEmail(USER_EMAIL);
         const responseRef = db.collection('responses').doc(AppState.currentQuizId)
           .collection('students').doc(studentDocId);
 
@@ -2784,7 +2786,7 @@ async function initializeApp() {
     async function recordViolation() {
       if (!AppState.currentQuizId) return;
 
-      const studentDocId = sanitizeEmail(USER_EMAIL);
+      const studentDocId = docIdFromEmail(USER_EMAIL);
 
       try {
         await db.collection('sessions').doc(AppState.currentQuizId)

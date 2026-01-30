@@ -40,6 +40,16 @@ const APP_CONFIG = {
  */
 const AUTH_CACHE_DURATION = 300; // 5 minutes
 
+/**
+ * Normalize email for consistent doc IDs and auth claims.
+ *
+ * @param {string} email - Raw user email.
+ * @returns {string} Normalized email.
+ */
+function normalizeEmail(email) {
+  return (email || '').trim().toLowerCase();
+}
+
 // ============================================
 // MAIN WEB APP ENTRY POINT
 // ============================================
@@ -62,7 +72,7 @@ function doGet(e) {
     // STEP 1: Authenticate User
     // ----------------------------------------
     const activeUser = Session.getActiveUser();
-    const userEmail = activeUser.getEmail();
+    const userEmail = normalizeEmail(activeUser.getEmail());
 
     if (!userEmail || userEmail === '') {
       return createErrorPage('Authentication Required',
@@ -196,22 +206,23 @@ function getFirebaseApiKey() {
  * @returns {boolean} True if user is an authorized teacher
  */
 function checkTeacherAuthorization(email) {
+  const normalizedEmail = normalizeEmail(email);
   // Check cache first
   const cache = CacheService.getScriptCache();
-  const cacheKey = `teacher_auth_${email}`;
+  const cacheKey = `teacher_auth_${normalizedEmail}`;
   const cachedResult = cache.get(cacheKey);
 
   if (cachedResult !== null) {
-    console.log(`[RBAC] Cache hit for ${email}: ${cachedResult}`);
+    console.log(`[RBAC] Cache hit for ${normalizedEmail}: ${cachedResult}`);
     return cachedResult === 'true';
   }
 
   // Query Firestore
-  const isAuthorized = queryFirestoreForTeacher(email);
+  const isAuthorized = queryFirestoreForTeacher(normalizedEmail);
 
   // Cache the result
   cache.put(cacheKey, isAuthorized.toString(), AUTH_CACHE_DURATION);
-  console.log(`[RBAC] Firestore query for ${email}: ${isAuthorized}`);
+  console.log(`[RBAC] Firestore query for ${normalizedEmail}: ${isAuthorized}`);
 
   return isAuthorized;
 }
@@ -225,22 +236,26 @@ function checkTeacherAuthorization(email) {
 function queryFirestoreForTeacher(email) {
   try {
     const projectId = getFirebaseProjectId();
-    const apiKey = getFirebaseApiKey();
 
-    if (!projectId || !apiKey) {
-      console.error('[RBAC] Missing Firebase project ID or API key');
+    if (!projectId) {
+      console.error('[RBAC] Missing Firebase project ID');
       // Fallback: Check against hardcoded bootstrap admin
       return checkBootstrapAdmin(email);
     }
 
+    const accessToken = ScriptApp.getOAuthToken();
+
     // Firestore REST API endpoint
     // Document path: authorized_teachers/{email}
-    const documentPath = `authorized_teachers/${encodeURIComponent(email)}`;
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${documentPath}?key=${apiKey}`;
+    const documentPath = `authorized_teachers/${encodeURIComponent(normalizeEmail(email))}`;
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${documentPath}`;
 
     const response = UrlFetchApp.fetch(url, {
       method: 'GET',
-      muteHttpExceptions: true
+      muteHttpExceptions: true,
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
     });
 
     const statusCode = response.getResponseCode();
@@ -293,8 +308,9 @@ function checkBootstrapAdmin(email) {
  */
 function invalidateAuthCache(email) {
   const cache = CacheService.getScriptCache();
-  cache.remove(`teacher_auth_${email}`);
-  console.log(`[RBAC] Cache invalidated for ${email}`);
+  const normalizedEmail = normalizeEmail(email);
+  cache.remove(`teacher_auth_${normalizedEmail}`);
+  console.log(`[RBAC] Cache invalidated for ${normalizedEmail}`);
 }
 
 /**
@@ -516,7 +532,7 @@ function testConfiguration() {
   }
 
   // Test user session
-  const email = Session.getActiveUser().getEmail();
+  const email = normalizeEmail(Session.getActiveUser().getEmail());
   console.log('Current User:', email || 'Not authenticated');
 
   // Test teacher check
@@ -547,15 +563,23 @@ function showScriptProperties() {
 // --- PASTE AT BOTTOM OF Code.gs ---
 function getFirebaseToken(userEmail, isTeacher) {
   const p = PropertiesService.getScriptProperties();
-  const key = p.getProperty('FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n');
-  const email = p.getProperty('FIREBASE_CLIENT_EMAIL');
+  const privateKey = p.getProperty('FIREBASE_PRIVATE_KEY');
+  const clientEmail = p.getProperty('FIREBASE_CLIENT_EMAIL');
+
+  if (!privateKey || !clientEmail) {
+    throw new Error('Missing Firebase service account credentials in Script Properties.');
+  }
+
+  const key = privateKey.replace(/\\n/g, '\n');
+  const email = normalizeEmail(clientEmail);
+  const normalizedUserEmail = normalizeEmail(userEmail);
   
   const header = Utilities.base64EncodeWebSafe(JSON.stringify({alg:'RS256',typ:'JWT'})).replace(/=/g,'');
   const payload = Utilities.base64EncodeWebSafe(JSON.stringify({
     iss: email, sub: email, aud: "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
     iat: Math.floor(Date.now()/1000), exp: Math.floor(Date.now()/1000)+3600,
-    uid: userEmail.replace(/[.]/g, '_'), 
-    claims: { email: userEmail, teacher: isTeacher }
+    uid: normalizedUserEmail.replace(/[.#$\/\[\]]/g, '_'), 
+    claims: { email: normalizedUserEmail, teacher: isTeacher }
   })).replace(/=/g,'');
   
   const signature = Utilities.base64EncodeWebSafe(Utilities.computeRsaSha256Signature(header+'.'+payload, key)).replace(/=/g,'');
