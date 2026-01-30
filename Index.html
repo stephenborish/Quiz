@@ -1196,6 +1196,45 @@
   <script>
     console.log('[DEBUG] Script execution test - if you see this, inline scripts work');
     window.SCRIPT_EXECUTION_VERIFIED = true;
+
+    // Test each template variable individually to find the broken one
+    console.log('[DEBUG] Testing template variables...');
+    try {
+      var testUserEmail = '<?= userEmail ?>';
+      console.log('[DEBUG] userEmail OK:', testUserEmail);
+    } catch(e) { console.error('[DEBUG] userEmail FAILED:', e); }
+
+    try {
+      var testIsTeacher = <?= isTeacher ?>;
+      console.log('[DEBUG] isTeacher OK:', testIsTeacher);
+    } catch(e) { console.error('[DEBUG] isTeacher FAILED:', e); }
+
+    try {
+      var testUserRole = '<?= userRole ?>';
+      console.log('[DEBUG] userRole OK:', testUserRole);
+    } catch(e) { console.error('[DEBUG] userRole FAILED:', e); }
+
+    try {
+      var testAppUrl = '<?= appUrl ?>';
+      console.log('[DEBUG] appUrl OK:', testAppUrl);
+    } catch(e) { console.error('[DEBUG] appUrl FAILED:', e); }
+
+    try {
+      var testAuthToken = '<?= authToken ?>';
+      console.log('[DEBUG] authToken OK, length:', testAuthToken ? testAuthToken.length : 0);
+    } catch(e) { console.error('[DEBUG] authToken FAILED:', e); }
+
+    try {
+      var testAuthTokenError = '<?= authTokenError ?>';
+      console.log('[DEBUG] authTokenError OK:', testAuthTokenError || '(empty)');
+    } catch(e) { console.error('[DEBUG] authTokenError FAILED:', e); }
+
+    try {
+      var testFirebaseConfig = <?!= firebaseConfig ?>;
+      console.log('[DEBUG] firebaseConfig OK, has apiKey:', !!testFirebaseConfig.apiKey);
+    } catch(e) { console.error('[DEBUG] firebaseConfig FAILED:', e); }
+
+    console.log('[DEBUG] All template variable tests complete');
   </script>
 
   <!-- ============================================
