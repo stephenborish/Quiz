@@ -31,7 +31,8 @@
 const APP_CONFIG = {
   title: 'Secure Assessment Platform',
   version: '2.0.0',
-  organization: 'Malvern Prep'
+  organization: 'Malvern Prep',
+  appUrl: 'https://script.google.com/macros/s/AKfycbxQlfAJyBNknabLSYZP4bzyjUFfqdwqWMSt3K42wU-J/dev'
 };
 
 /**
@@ -113,7 +114,7 @@ function doGet(e) {
     template.appVersion = APP_CONFIG.version;
     template.serverTimestamp = new Date().toISOString();
     template.authToken = getFirebaseToken(userEmail, isTeacher); 
-    template.appUrl = ScriptApp.getService().getUrl();
+    template.appUrl = APP_CONFIG.appUrl || ScriptApp.getService().getUrl();
     
     // Evaluate template and configure output
     const htmlOutput = template.evaluate();
@@ -550,7 +551,7 @@ function sendQuizInvites(quizId, courseId) {
   }
 
   const rosterDocs = listFirestoreDocuments(`courses/${courseId}/roster`);
-  const appUrl = ScriptApp.getService().getUrl();
+  const appUrl = APP_CONFIG.appUrl || ScriptApp.getService().getUrl();
   const quizLink = `${appUrl}?quiz=${encodeURIComponent(quizId)}`;
 
   let sent = 0;
