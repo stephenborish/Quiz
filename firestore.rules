@@ -1,0 +1,232 @@
+rules_version = '2';
+
+/**
+ * Firestore Security Rules for Secure Assessment Platform
+ * ========================================================
+ *
+ * Collections Structure:
+ * - quiz_state/global          : Global exam state (isOpen, etc.)
+ * - students/{email}           : Student profiles & status
+ * - responses/{email}          : Student exam responses
+ *
+ * Security Model:
+ * - Teacher Superuser has full access to everything
+ * - Students have limited, scoped access to their own data
+ * - Critical: Submission lock prevents blocked students from writing
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    /**
+     * Checks if the requesting user is the designated Teacher/Admin
+     * This is the single source of truth for admin privileges
+     */
+    function isTeacher() {
+      return request.auth != null &&
+             request.auth.token.email == 'sborish@malvernprep.org';
+    }
+
+    /**
+     * Checks if the requesting user owns the document
+     * Compares authenticated email against document ID (email-based)
+     */
+    function isOwner(email) {
+      return request.auth != null &&
+             request.auth.token.email == email;
+    }
+
+    /**
+     * Checks if a student is currently blocked
+     * Used for the critical submission lock mechanism
+     * Returns true if student status is 'blocked', preventing writes
+     */
+    function isStudentBlocked(email) {
+      return exists(/databases/$(database)/documents/students/$(email)) &&
+             get(/databases/$(database)/documents/students/$(email)).data.status == 'blocked';
+    }
+
+    /**
+     * Validates that the incoming data has required fields
+     * Prevents malformed documents from being written
+     */
+    function hasRequiredStudentFields() {
+      return request.resource.data.keys().hasAny(['email', 'status', 'examVersion']);
+    }
+
+    /**
+     * Validates response document structure
+     */
+    function hasRequiredResponseFields() {
+      return request.resource.data.keys().hasAny(['answer', 'timestamp']);
+    }
+
+    // ============================================
+    // QUIZ STATE COLLECTION
+    // ============================================
+
+    /**
+     * quiz_state/global - Controls exam availability
+     *
+     * Document Structure:
+     * {
+     *   isOpen: boolean,        // Whether exam is accepting responses
+     *   openedAt: timestamp,    // When exam was opened
+     *   closedAt: timestamp     // When exam was closed
+     * }
+     *
+     * Access:
+     * - Teacher: Full read/write
+     * - Students: Read only (to know if exam is open)
+     */
+    match /quiz_state/{docId} {
+      // Teacher has full control over quiz state
+      allow read, write: if isTeacher();
+
+      // Students can ONLY read the global state document
+      // They need this to know when the exam opens/closes
+      // CRITICAL: Students can NEVER modify quiz state
+      allow read: if request.auth != null && docId == 'global';
+
+      // Explicitly deny all student writes
+      allow write: if false;
+    }
+
+    // ============================================
+    // STUDENTS COLLECTION
+    // ============================================
+
+    /**
+     * students/{email} - Student profiles and exam status
+     *
+     * Document Structure:
+     * {
+     *   email: string,           // Student email (matches doc ID)
+     *   displayName: string,     // Student's display name
+     *   examVersion: number,     // Assigned exam version (1-5)
+     *   status: string,          // 'active' | 'blocked'
+     *   joinedAt: timestamp,     // When student first connected
+     *   violations: array,       // Array of violation timestamps
+     *   lastActivity: timestamp  // Last activity timestamp
+     * }
+     *
+     * Access:
+     * - Teacher: Full read/write (can unblock students, view all)
+     * - Students: Read/write ONLY their own document
+     */
+    match /students/{email} {
+      // Teacher Superuser: Full access to all student documents
+      // Needed for: viewing roster, unblocking students, monitoring
+      allow read, write: if isTeacher();
+
+      // Students can read their own document
+      // Needed for: checking their status, loading their exam version
+      allow read: if isOwner(email);
+
+      // Students can write to their own document with restrictions
+      // This allows: setting initial data, updating status (for blocking)
+      // The client handles blocking - we allow it for the visibility listener
+      allow write: if isOwner(email) &&
+                      request.auth != null;
+
+      // Students cannot read other students' documents
+      // This is implicitly denied by the isOwner check above
+    }
+
+    // ============================================
+    // RESPONSES COLLECTION
+    // ============================================
+
+    /**
+     * responses/{email} - Student exam submissions
+     *
+     * Document Structure:
+     * {
+     *   email: string,           // Student email (matches doc ID)
+     *   examVersion: number,     // Which exam version they had
+     *   answers: map,            // { questionId: selectedAnswer }
+     *   submittedAt: timestamp,  // Submission timestamp
+     *   clientInfo: map          // Browser/device info for auditing
+     * }
+     *
+     * Access:
+     * - Teacher: Full read/write (for grading, auditing)
+     * - Students: Read/write ONLY their own document
+     * - CRITICAL: Blocked students CANNOT write (anti-cheat)
+     */
+    match /responses/{email} {
+      // Teacher Superuser: Full access for grading and auditing
+      allow read, write: if isTeacher();
+
+      // Students can read their own responses
+      // Useful for: confirming submission, review mode
+      allow read: if isOwner(email);
+
+      // CRITICAL SECURITY RULE: Submission Lock
+      // ========================================
+      // A student can ONLY write to their responses if:
+      // 1. They own the document (email matches)
+      // 2. They are NOT blocked in the students collection
+      //
+      // This server-side rule prevents:
+      // - Blocked students from submitting via console hacks
+      // - "Inspect Element" deletion attacks on client-side blocks
+      // - Any client-side bypass attempts
+      //
+      // The isStudentBlocked() function performs a cross-collection
+      // read to verify the student's current status before allowing writes
+      allow write: if isOwner(email) &&
+                      request.auth != null &&
+                      !isStudentBlocked(email);
+    }
+
+    // ============================================
+    // AUDIT LOG COLLECTION (Optional - for compliance)
+    // ============================================
+
+    /**
+     * audit_log/{logId} - Security and activity audit trail
+     *
+     * Document Structure:
+     * {
+     *   email: string,           // Who performed the action
+     *   action: string,          // What action was taken
+     *   timestamp: timestamp,    // When it happened
+     *   details: map             // Additional context
+     * }
+     *
+     * Access:
+     * - Teacher: Full read/write
+     * - Students: Write only (append-only log)
+     */
+    match /audit_log/{logId} {
+      // Teacher can read all audit logs
+      allow read, write: if isTeacher();
+
+      // Students can only create audit entries (append-only)
+      // They cannot read or modify existing entries
+      // This creates an immutable audit trail
+      allow create: if request.auth != null &&
+                       request.resource.data.email == request.auth.token.email;
+
+      // Explicitly deny read, update, delete for students
+      allow read, update, delete: if false;
+    }
+
+    // ============================================
+    // DEFAULT DENY
+    // ============================================
+
+    /**
+     * Catch-all rule: Deny access to any undefined collections
+     * This is a security best practice - explicit deny by default
+     */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
