@@ -102,7 +102,8 @@ service firebase.storage {
       // Validates: must be an image, max 5MB
       allow write: if isTeacher() &&
                       isImage() &&
-                      isValidSize();
+                      isValidSize() &&
+                      hasValidExtension(filename);
 
       // Teachers can delete images
       allow delete: if isTeacher();
@@ -124,7 +125,8 @@ service firebase.storage {
       // Only teachers can upload option images
       allow write: if isTeacher() &&
                       isImage() &&
-                      isValidSize();
+                      isValidSize() &&
+                      hasValidExtension(filename);
 
       // Teachers can delete images
       allow delete: if isTeacher();
@@ -152,7 +154,8 @@ service firebase.storage {
       allow write: if isTeacher() &&
                       request.auth.uid == userId &&
                       isImage() &&
-                      isValidSize();
+                      isValidSize() &&
+                      hasValidExtension(filename);
 
       // Users can delete their own temp files
       allow delete: if isAuthenticated() &&
@@ -176,7 +179,8 @@ service firebase.storage {
       // Only teachers can upload public assets
       allow write: if isTeacher() &&
                       isImage() &&
-                      isValidSize();
+                      isValidSize() &&
+                      hasValidExtension(filename);
 
       // Teachers can delete public assets
       allow delete: if isTeacher();
