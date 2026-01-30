@@ -47,7 +47,7 @@
 
     html, body {
       height: 100%;
-      overflow: hidden;
+      overflow: auto;
     }
 
     body {
@@ -1544,6 +1544,7 @@
        FIREBASE SDK (Compat 9.22.0)
        ============================================ -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
@@ -1673,8 +1674,19 @@
     // INITIALIZATION
     // ============================================
 
-    async function initializeApp() {
+async function initializeApp() {
       console.log('[INIT] Starting application...');
+      
+      // 1. WAIT FOR SIGN IN (Crucial Step)
+      try {
+        await firebase.auth().signInWithCustomToken('<?= authToken ?>');
+        console.log('[AUTH] Signed in successfully');
+      } catch (error) {
+        console.error('[AUTH] Sign in failed', error);
+        showToast('Authentication failed', 'error');
+        return; // Stop app if auth fails
+      }
+
       console.log('[INIT] User:', USER_EMAIL, 'Role:', USER_ROLE);
 
       try {
