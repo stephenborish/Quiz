@@ -113,9 +113,22 @@ function doGet(e) {
     template.appTitle = APP_CONFIG.title;
     template.appVersion = APP_CONFIG.version;
     template.serverTimestamp = new Date().toISOString();
-    template.authToken = getFirebaseToken(userEmail, isTeacher); 
     template.appUrl = APP_CONFIG.appUrl || ScriptApp.getService().getUrl();
-    
+
+    // Generate auth token with error handling
+    let authToken = '';
+    let authTokenError = '';
+    try {
+      authToken = getFirebaseToken(userEmail, isTeacher);
+      console.log('[AUTH] Token generated successfully, length:', authToken.length);
+    } catch (tokenError) {
+      console.error('[AUTH] Token generation failed:', tokenError.toString());
+      authTokenError = tokenError.message || 'Token generation failed';
+      // Don't throw - let the page load and show the error in the UI
+    }
+    template.authToken = authToken;
+    template.authTokenError = authTokenError;
+
     // Evaluate template and configure output
     const htmlOutput = template.evaluate();
     htmlOutput.setTitle(APP_CONFIG.title);

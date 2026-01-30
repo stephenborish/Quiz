@@ -1192,6 +1192,12 @@
   </style>
 </head>
 <body>
+  <!-- Debug script - runs first to verify JS execution -->
+  <script>
+    console.log('[DEBUG] Script execution test - if you see this, inline scripts work');
+    window.SCRIPT_EXECUTION_VERIFIED = true;
+  </script>
+
   <!-- ============================================
        LOADING OVERLAY
        ============================================ -->
@@ -1655,12 +1661,23 @@
     const USER_EMAIL = '<?= userEmail ?>';
     const IS_TEACHER = <?= isTeacher ?>;
     const USER_ROLE = '<?= userRole ?>';
-    const FIREBASE_CONFIG = <?!= firebaseConfig ?>;
     const APP_URL = '<?= appUrl ?>';
     const AUTH_TOKEN = '<?= authToken ?>';
+    const AUTH_TOKEN_ERROR = '<?= authTokenError ?>';
+
+    // Parse Firebase config safely
+    let FIREBASE_CONFIG = null;
+    try {
+      FIREBASE_CONFIG = <?!= firebaseConfig ?>;
+      console.log('[SCRIPT] Firebase config parsed successfully');
+    } catch (configError) {
+      console.error('[SCRIPT] Firebase config parse error:', configError);
+    }
 
     console.log('[SCRIPT] Variables injected. USER_EMAIL:', USER_EMAIL, 'IS_TEACHER:', IS_TEACHER);
-    console.log('[SCRIPT] AUTH_TOKEN exists:', !!AUTH_TOKEN && AUTH_TOKEN !== 'null' && AUTH_TOKEN !== 'undefined');
+    console.log('[SCRIPT] AUTH_TOKEN exists:', !!AUTH_TOKEN && AUTH_TOKEN !== '' && AUTH_TOKEN !== 'null');
+    console.log('[SCRIPT] AUTH_TOKEN_ERROR:', AUTH_TOKEN_ERROR || '(none)');
+    console.log('[SCRIPT] FIREBASE_CONFIG valid:', !!FIREBASE_CONFIG && !!FIREBASE_CONFIG.apiKey);
 
     // ============================================
     // INITIALIZE FIREBASE
@@ -1862,6 +1879,11 @@ async function initializeApp() {
 
         if (!db || !storage) {
           failInitialization('Configuration error: Firebase services not available. Please contact your administrator.');
+          return;
+        }
+
+        if (AUTH_TOKEN_ERROR && AUTH_TOKEN_ERROR !== '') {
+          failInitialization('Server error: ' + AUTH_TOKEN_ERROR);
           return;
         }
 
