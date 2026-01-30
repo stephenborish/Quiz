@@ -954,12 +954,26 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--dark);
+      background: #f8fafc;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 10000;
+    }
+
+    .loading-overlay.error .spinner {
+      display: none;
+    }
+
+    .loading-actions {
+      display: none;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .loading-overlay.error .loading-actions {
+      display: flex;
     }
 
     .spinner {
@@ -1183,7 +1197,10 @@
        ============================================ -->
   <div id="loadingOverlay" class="loading-overlay">
     <div class="spinner"></div>
-    <div class="loading-text">Initializing Secure Assessment Platform...</div>
+    <div class="loading-text" id="loadingText">Initializing Secure Assessment Platform...</div>
+    <div class="loading-actions">
+      <button class="btn btn-outline" onclick="location.reload()">Retry</button>
+    </div>
   </div>
 
   <!-- ============================================
@@ -1752,16 +1769,36 @@
     // INITIALIZATION
     // ============================================
 
+    function failInitialization(message) {
+      DOM.loadingOverlay.classList.add('error');
+      const loadingText = document.getElementById('loadingText');
+      if (loadingText) {
+        loadingText.textContent = message || 'Initialization failed. Please try again.';
+      }
+      showToast(message || 'Initialization failed', 'error');
+    }
+
+    function withTimeout(promise, timeoutMs, timeoutMessage) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs))
+      ]);
+    }
+
 async function initializeApp() {
       console.log('[INIT] Starting application...');
       
       // 1. WAIT FOR SIGN IN (Crucial Step)
       try {
-        await firebase.auth().signInWithCustomToken('<?= authToken ?>');
+        await withTimeout(
+          firebase.auth().signInWithCustomToken('<?= authToken ?>'),
+          15000,
+          'Sign-in timed out. Please retry.'
+        );
         console.log('[AUTH] Signed in successfully');
       } catch (error) {
         console.error('[AUTH] Sign in failed', error);
-        showToast('Authentication failed', 'error');
+        failInitialization('Authentication failed. Please retry.');
         return; // Stop app if auth fails
       }
 
@@ -1779,7 +1816,7 @@ async function initializeApp() {
 
       } catch (error) {
         console.error('[INIT] Failed:', error);
-        showToast('Failed to initialize application', 'error');
+        failInitialization('Failed to initialize application.');
       }
     }
 
