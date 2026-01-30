@@ -113,6 +113,7 @@ function doGet(e) {
     template.appVersion = APP_CONFIG.version;
     template.serverTimestamp = new Date().toISOString();
     template.authToken = getFirebaseToken(userEmail, isTeacher); 
+    template.appUrl = ScriptApp.getService().getUrl();
     
     // Evaluate template and configure output
     const htmlOutput = template.evaluate();
@@ -485,6 +486,98 @@ function logAuditEvent(action, details) {
   console.log(`[AUDIT] ${timestamp} | ${email} | ${action} | ${JSON.stringify(details || {})}`);
 
   return { success: true, timestamp: timestamp };
+}
+
+/**
+ * Lists documents for a given Firestore collection path using OAuth.
+ *
+ * @param {string} collectionPath - Firestore collection path (e.g., courses/{id}/roster)
+ * @returns {Array<Object>} Array of document objects
+ */
+function listFirestoreDocuments(collectionPath) {
+  const projectId = getFirebaseProjectId();
+  if (!projectId) {
+    throw new Error('Missing Firebase project ID.');
+  }
+
+  const accessToken = ScriptApp.getOAuthToken();
+  const documents = [];
+  let pageToken = null;
+
+  do {
+    let url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collectionPath}?pageSize=500`;
+    if (pageToken) {
+      url += `&pageToken=${encodeURIComponent(pageToken)}`;
+    }
+
+    const response = UrlFetchApp.fetch(url, {
+      method: 'GET',
+      muteHttpExceptions: true,
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    const statusCode = response.getResponseCode();
+    if (statusCode !== 200) {
+      throw new Error(`Firestore list failed: ${statusCode} - ${response.getContentText()}`);
+    }
+
+    const payload = JSON.parse(response.getContentText());
+    documents.push(...(payload.documents || []));
+    pageToken = payload.nextPageToken || null;
+  } while (pageToken);
+
+  return documents;
+}
+
+/**
+ * Sends quiz invite emails to roster students.
+ *
+ * @param {string} quizId - Quiz document ID
+ * @param {string} courseId - Course document ID
+ * @returns {Object} Result with sent count
+ */
+function sendQuizInvites(quizId, courseId) {
+  const userEmail = normalizeEmail(Session.getActiveUser().getEmail());
+
+  if (!quizId || !courseId) {
+    throw new Error('Missing quizId or courseId.');
+  }
+
+  if (!checkTeacherAuthorization(userEmail)) {
+    throw new Error('Unauthorized.');
+  }
+
+  const rosterDocs = listFirestoreDocuments(`courses/${courseId}/roster`);
+  const appUrl = ScriptApp.getService().getUrl();
+  const quizLink = `${appUrl}?quiz=${encodeURIComponent(quizId)}`;
+
+  let sent = 0;
+
+  rosterDocs.forEach((doc) => {
+    const fields = doc.fields || {};
+    const emailField = fields.email && fields.email.stringValue ? fields.email.stringValue : '';
+    const rosterEmail = emailField || doc.name.split('/').pop();
+    const nameField = fields.name && fields.name.stringValue ? fields.name.stringValue : '';
+
+    if (!rosterEmail) {
+      return;
+    }
+
+    const subject = `Quiz Invite: ${APP_CONFIG.title}`;
+    const greeting = nameField ? `Hello ${nameField},` : 'Hello,';
+    const body = `${greeting}\n\n` +
+      `You have been invited to take a quiz. Use the link below to access the quiz:\n\n` +
+      `${quizLink}\n\n` +
+      `If the quiz is not open yet, you will see the waiting screen until your teacher opens it.\n\n` +
+      `Thank you.`;
+
+    MailApp.sendEmail(rosterEmail, subject, body);
+    sent += 1;
+  });
+
+  return { success: true, sent: sent };
 }
 
 // ============================================

@@ -83,6 +83,17 @@ service cloud.firestore {
              get(sessionPath).data.status == 'blocked';
     }
 
+    function quizRosterCourseId(quizId) {
+      return get(/databases/$(database)/documents/quizzes/$(quizId)).data.rosterCourseId;
+    }
+
+    function isRostered(quizId, email) {
+      let rosterCourseId = quizRosterCourseId(quizId);
+      return rosterCourseId == null ||
+             rosterCourseId == '' ||
+             exists(/databases/$(database)/documents/courses/$(rosterCourseId)/roster/$(email));
+    }
+
     /**
      * Validates required fields for response submission
      */
@@ -187,8 +198,9 @@ service cloud.firestore {
 
       // Students can only read OPEN quizzes
       allow read: if isAuthenticated() &&
-                     (resource.data.status == 'OPEN' ||
-                      resource.data.status == 'CLOSED');
+                     ((resource.data.rosterCourseId == null || resource.data.rosterCourseId == '')
+                      ? (resource.data.status == 'OPEN' || resource.data.status == 'CLOSED')
+                      : isRostered(quizId, normalizedEmail()));
     }
 
     /**
@@ -255,16 +267,19 @@ service cloud.firestore {
       allow create: if isOwner(email) &&
                        isAuthenticated() &&
                        isQuizOpen(quizId) &&
+                       isRostered(quizId, email) &&
                        request.resource.data.email == normalizedEmail() &&
                        request.resource.data.status == 'active';
 
       allow update: if isOwner(email) &&
                        isAuthenticated() &&
                        isQuizOpen(quizId) &&
+                       isRostered(quizId, email) &&
                        request.resource.data.email == normalizedEmail() &&
                        resource.data.status != 'blocked' &&
                        (request.resource.data.status == resource.data.status ||
-                        request.resource.data.status == 'blocked');
+                        request.resource.data.status == 'blocked' ||
+                        (resource.data.status == 'invited' && request.resource.data.status == 'active'));
     }
 
     // ============================================
@@ -318,6 +333,7 @@ service cloud.firestore {
       allow create: if isOwner(email) &&
                        isAuthenticated() &&
                        isQuizOpen(quizId) &&
+                       isRostered(quizId, email) &&
                        !isStudentBlocked(quizId, email) &&
                        request.resource.data.email == normalizedEmail() &&
                        request.resource.data.quizId == quizId;
@@ -325,9 +341,18 @@ service cloud.firestore {
       allow update: if isOwner(email) &&
                        isAuthenticated() &&
                        isQuizOpen(quizId) &&
+                       isRostered(quizId, email) &&
                        !isStudentBlocked(quizId, email) &&
                        request.resource.data.email == normalizedEmail() &&
                        request.resource.data.quizId == quizId;
+    }
+
+    match /courses/{courseId} {
+      allow read, write: if isAuthorizedTeacher();
+    }
+
+    match /courses/{courseId}/roster/{email} {
+      allow read, write: if isAuthorizedTeacher();
     }
 
     // ============================================

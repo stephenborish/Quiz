@@ -15,6 +15,7 @@
        CSS VARIABLES & RESET
        ========================================== */
     :root {
+      color-scheme: light;
       --primary: #667eea;
       --primary-dark: #5a67d8;
       --secondary: #764ba2;
@@ -24,12 +25,12 @@
       --danger-dark: #e53e3e;
       --warning: #ed8936;
       --info: #4299e1;
-      --dark: #1a1a2e;
-      --darker: #16213e;
-      --darkest: #0f0f1a;
-      --light: #f7fafc;
-      --gray: #a0aec0;
-      --gray-dark: #4a5568;
+      --dark: #f8fafc;
+      --darker: #edf2f7;
+      --darkest: #e2e8f0;
+      --light: #1a202c;
+      --gray: #4a5568;
+      --gray-dark: #2d3748;
       --gray-light: #e2e8f0;
       --border-radius: 12px;
       --border-radius-lg: 20px;
@@ -52,7 +53,7 @@
 
     body {
       font-family: var(--font-family);
-      background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       color: var(--light);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
@@ -69,15 +70,15 @@
     }
 
     .header {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: #ffffff;
+      border-bottom: 1px solid var(--gray-light);
       padding: 12px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-shrink: 0;
       z-index: 100;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
     }
 
     .header-left {
@@ -98,7 +99,7 @@
     .header-version {
       font-size: 11px;
       color: var(--gray);
-      background: rgba(255, 255, 255, 0.1);
+      background: #edf2f7;
       padding: 2px 8px;
       border-radius: 10px;
     }
@@ -145,9 +146,9 @@
        ========================================== */
     .tab-nav {
       display: flex;
-      background: rgba(0, 0, 0, 0.3);
+      background: #f1f5f9;
       padding: 0 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid var(--gray-light);
       overflow-x: auto;
       flex-shrink: 0;
     }
@@ -169,14 +170,14 @@
     }
 
     .tab-btn:hover {
-      color: var(--light);
-      background: rgba(255, 255, 255, 0.05);
+      color: var(--gray-dark);
+      background: #e2e8f0;
     }
 
     .tab-btn.active {
       color: var(--primary);
       border-bottom-color: var(--primary);
-      background: rgba(102, 126, 234, 0.1);
+      background: #e2e8f0;
     }
 
     .tab-icon {
@@ -204,12 +205,12 @@
        CARDS & CONTAINERS
        ========================================== */
     .card {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(10px);
+      background: #ffffff;
       border-radius: var(--border-radius);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--gray-light);
       padding: 20px;
       margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     }
 
     .card-header {
@@ -290,13 +291,13 @@
 
     .btn-outline {
       background: transparent;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      color: var(--light);
+      border: 2px solid #cbd5e0;
+      color: var(--gray-dark);
     }
 
     .btn-outline:hover {
       border-color: var(--primary);
-      background: rgba(102, 126, 234, 0.1);
+      background: #edf2f7;
     }
 
     .btn-sm {
@@ -331,10 +332,10 @@
     .form-textarea {
       width: 100%;
       padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      background: #ffffff;
+      border: 2px solid #cbd5e0;
       border-radius: var(--border-radius);
-      color: var(--light);
+      color: var(--gray-dark);
       font-size: 14px;
       transition: var(--transition);
     }
@@ -344,7 +345,7 @@
     .form-textarea:focus {
       outline: none;
       border-color: var(--primary);
-      background: rgba(255, 255, 255, 0.08);
+      background: #ffffff;
     }
 
     .form-textarea {
@@ -362,7 +363,8 @@
     .table-container {
       overflow-x: auto;
       border-radius: var(--border-radius);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--gray-light);
+      background: #ffffff;
     }
 
     .data-table {
@@ -371,7 +373,7 @@
     }
 
     .data-table th {
-      background: rgba(255, 255, 255, 0.1);
+      background: #f8fafc;
       padding: 14px 16px;
       text-align: left;
       font-size: 12px;
@@ -388,7 +390,7 @@
     }
 
     .data-table tr:hover {
-      background: rgba(255, 255, 255, 0.03);
+      background: #f1f5f9;
     }
 
     /* ==========================================
@@ -811,11 +813,11 @@
     }
 
     .option-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
       border-radius: var(--border-radius);
       padding: 16px 20px;
-      color: var(--light);
+      color: var(--gray-dark);
       font-size: 15px;
       text-align: left;
       cursor: pointer;
@@ -826,12 +828,12 @@
     }
 
     .option-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: #f8fafc;
       border-color: var(--primary);
     }
 
     .option-btn.selected {
-      background: rgba(102, 126, 234, 0.2);
+      background: rgba(102, 126, 234, 0.12);
       border-color: var(--primary);
     }
 
@@ -839,7 +841,7 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
+      background: #edf2f7;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -869,7 +871,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(15, 23, 42, 0.35);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -878,14 +880,14 @@
     }
 
     .metacognition-content {
-      background: var(--darker);
+      background: #ffffff;
       border-radius: var(--border-radius-lg);
       padding: 40px;
       max-width: 500px;
       width: 100%;
       text-align: center;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: var(--shadow);
+      border: 1px solid var(--gray-light);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15);
     }
 
     .metacognition-title {
@@ -908,11 +910,11 @@
     }
 
     .confidence-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
       border-radius: var(--border-radius);
       padding: 20px 15px;
-      color: var(--light);
+      color: var(--gray-dark);
       cursor: pointer;
       transition: var(--transition);
       text-align: center;
@@ -1022,10 +1024,10 @@
     }
 
     .quiz-card {
-      background: rgba(255, 255, 255, 0.08);
+      background: #ffffff;
       border-radius: var(--border-radius);
       padding: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--gray-light);
       transition: var(--transition);
     }
 
@@ -1053,11 +1055,11 @@
     }
 
     .question-editor {
-      background: rgba(0, 0, 0, 0.2);
+      background: #f8fafc;
       border-radius: var(--border-radius);
       padding: 20px;
       margin-bottom: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--gray-light);
     }
 
     .option-editor {
@@ -1066,8 +1068,35 @@
       align-items: center;
       margin-bottom: 10px;
       padding: 15px;
-      background: rgba(255, 255, 255, 0.05);
+      background: #ffffff;
       border-radius: var(--border-radius);
+    }
+
+    #questionsList {
+      max-height: 60vh;
+      overflow-y: scroll;
+      padding-right: 6px;
+      scrollbar-width: auto;
+      scrollbar-color: #cbd5e0 #edf2f7;
+    }
+
+    #questionsList::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    #questionsList::-webkit-scrollbar-track {
+      background: #edf2f7;
+      border-radius: 10px;
+    }
+
+    #questionsList::-webkit-scrollbar-thumb {
+      background: #cbd5e0;
+      border-radius: 10px;
+      border: 3px solid #edf2f7;
+    }
+
+    #questionsList::-webkit-scrollbar-thumb:hover {
+      background: #a0aec0;
     }
 
     .option-editor .form-input {
@@ -1230,6 +1259,9 @@
                   <button id="closeQuizBtn" class="btn btn-danger" onclick="toggleQuizStatus('CLOSED')">
                     Close Quiz
                   </button>
+                  <button id="sendInvitesBtn" class="btn btn-outline" onclick="sendInvitesForActiveQuiz()" disabled>
+                    Send Invites
+                  </button>
                 </div>
               </div>
               <div id="quizStatusBanner" class="hidden" style="padding: 15px; border-radius: 8px; text-align: center; font-weight: 600;"></div>
@@ -1282,9 +1314,14 @@
                 <h2 class="card-title">
                   <span id="editingQuizTitle">Quiz Questions</span>
                 </h2>
-                <button class="btn btn-outline" onclick="closeQuestionEditor()">
-                  Back to Quizzes
-                </button>
+                <div class="card-actions">
+                  <button class="btn btn-outline" onclick="saveAllQuestions()">
+                    Save All
+                  </button>
+                  <button class="btn btn-outline" onclick="closeQuestionEditor()">
+                    Back to Quizzes
+                  </button>
+                </div>
               </div>
 
               <div id="questionsList">
@@ -1384,6 +1421,36 @@
 
           <!-- Admin Panel -->
           <div id="adminPanel" class="tab-panel">
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Rosters (Courses)</h2>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Create Course</label>
+                <div class="flex gap-10">
+                  <input type="text" id="newCourseName" class="form-input" placeholder="Course name" style="flex: 2;">
+                  <input type="text" id="newCourseBlock" class="form-input" placeholder="Block" style="flex: 1;">
+                  <button class="btn btn-success" onclick="createCourse()">Create</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Select Course</label>
+                <select id="courseSelect" class="form-select">
+                  <option value="">Select course...</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Import Roster CSV (email,name,block)</label>
+                <textarea id="rosterCsvInput" class="form-textarea" placeholder="student1@example.com,Student One,A&#10;student2@example.com,Student Two,B"></textarea>
+                <div class="mt-10">
+                  <button class="btn btn-primary" onclick="importRoster()">Import / Update Roster</button>
+                </div>
+              </div>
+            </div>
+
             <div class="card">
               <div class="card-header">
                 <h2 class="card-title">Authorized Teachers</h2>
@@ -1530,6 +1597,13 @@
         <textarea id="newQuizDescription" class="form-textarea" placeholder="Brief description..."></textarea>
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Attach Roster (optional)</label>
+        <select id="newQuizRosterSelect" class="form-select">
+          <option value="">No roster</option>
+        </select>
+      </div>
+
       <div class="metacognition-actions">
         <button class="btn btn-outline" onclick="closeCreateQuizModal()">Cancel</button>
         <button class="btn btn-success" onclick="createNewQuiz()">Create Quiz</button>
@@ -1559,6 +1633,7 @@
     const IS_TEACHER = <?= isTeacher ?>;
     const USER_ROLE = '<?= userRole ?>';
     const FIREBASE_CONFIG = <?!= firebaseConfig ?>;
+    const APP_URL = '<?= appUrl ?>';
 
     // ============================================
     // INITIALIZE FIREBASE
@@ -1578,6 +1653,9 @@
       // Teacher
       quizzes: [],
       currentEditingQuiz: null,
+      currentQuestions: [],
+      courses: [],
+      selectedCourseId: null,
       teachers: [],
 
       // Student
@@ -1719,6 +1797,7 @@ async function initializeApp() {
 
       // Load quizzes
       await loadQuizzes();
+      await loadCourses();
 
       // Setup listeners
       setupTeacherListeners();
@@ -1794,9 +1873,46 @@ async function initializeApp() {
       };
     }
 
+    async function loadCourses() {
+      try {
+        const snapshot = await db.collection('courses')
+          .orderBy('createdAt', 'desc')
+          .get();
+
+        AppState.courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateCourseSelects();
+
+      } catch (error) {
+        console.error('[COURSES] Failed to load courses:', error);
+        showToast('Failed to load courses', 'error');
+      }
+    }
+
+    function updateCourseSelects() {
+      const options = '<option value="">Select course...</option>' +
+        AppState.courses.map(course => `
+          <option value="${course.id}">${course.name || 'Course'}${course.block ? ` (${course.block})` : ''}</option>
+        `).join('');
+
+      const courseSelect = document.getElementById('courseSelect');
+      const rosterSelect = document.getElementById('newQuizRosterSelect');
+
+      if (courseSelect) {
+        courseSelect.innerHTML = options;
+        courseSelect.onchange = (e) => {
+          AppState.selectedCourseId = e.target.value || null;
+        };
+      }
+
+      if (rosterSelect) {
+        rosterSelect.innerHTML = '<option value="">No roster</option>' + options;
+      }
+    }
+
     function showCreateQuizModal() {
       document.getElementById('newQuizTitle').value = '';
       document.getElementById('newQuizDescription').value = '';
+      document.getElementById('newQuizRosterSelect').value = '';
       DOM.createQuizModal.classList.remove('hidden');
     }
 
@@ -1807,6 +1923,7 @@ async function initializeApp() {
     async function createNewQuiz() {
       const title = document.getElementById('newQuizTitle').value.trim();
       const description = document.getElementById('newQuizDescription').value.trim();
+      const rosterCourseId = document.getElementById('newQuizRosterSelect').value || null;
 
       if (!title) {
         showToast('Please enter a quiz title', 'warning');
@@ -1821,6 +1938,7 @@ async function initializeApp() {
           createdBy: USER_EMAIL,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          rosterCourseId,
           settings: {
             shuffleQuestions: false,
             shuffleOptions: true,
@@ -1855,6 +1973,7 @@ async function initializeApp() {
           .collection('questions').orderBy('order').get();
 
         const questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        AppState.currentQuestions = questions;
         renderQuestionsList(questions);
 
       } catch (error) {
@@ -1879,7 +1998,10 @@ async function initializeApp() {
         <div class="question-editor" data-question-id="${q.id}">
           <div class="flex" style="justify-content: space-between; margin-bottom: 15px;">
             <strong>Question ${idx + 1}</strong>
-            <button class="btn btn-sm btn-danger" onclick="deleteQuestion('${q.id}')">Delete</button>
+            <div class="flex gap-10">
+              <button class="btn btn-sm btn-outline" onclick="saveQuestion('${q.id}')">Save</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteQuestion('${q.id}')">Delete</button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -1964,6 +2086,74 @@ async function initializeApp() {
           .update({ text, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
       } catch (error) {
         console.error('[TEACHER] Failed to update question:', error);
+      }
+    }
+
+    function buildQuestionDraft(questionId) {
+      const question = AppState.currentQuestions.find(q => q.id === questionId);
+      const text = document.getElementById(`qtext_${questionId}`)?.value ?? '';
+      const optionRows = document.querySelectorAll(`#options_${questionId} .option-editor`);
+
+      const options = Array.from(optionRows).map((row, idx) => {
+        const input = row.querySelector('input.form-input');
+        const radio = row.querySelector('input[type="radio"]');
+        const baseOption = question?.options?.[idx] || {};
+
+        return {
+          id: baseOption.id || `opt_${idx}`,
+          text: input ? input.value : '',
+          imageUrl: baseOption.imageUrl || null,
+          isCorrect: Boolean(radio?.checked)
+        };
+      });
+
+      return { text, options };
+    }
+
+    async function saveQuestion(questionId, { showSuccess = true, showErrors = true } = {}) {
+      if (!AppState.currentEditingQuiz) return;
+
+      const draft = buildQuestionDraft(questionId);
+      if (!draft) return;
+
+      try {
+        await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId)
+          .update({
+            text: draft.text,
+            options: draft.options,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+        if (showSuccess) {
+          showToast('Saved', 'success');
+        }
+      } catch (error) {
+        console.error('[TEACHER] Failed to save question:', error);
+        if (showErrors) {
+          showToast('Failed to save question', 'error');
+        }
+        throw error;
+      }
+    }
+
+    async function saveAllQuestions() {
+      if (!AppState.currentQuestions.length) {
+        showToast('No questions to save', 'warning');
+        return;
+      }
+
+      try {
+        await Promise.all(
+          AppState.currentQuestions.map(question => saveQuestion(question.id, {
+            showSuccess: false,
+            showErrors: false
+          }))
+        );
+        showToast('All questions saved', 'success');
+      } catch (error) {
+        console.error('[TEACHER] Failed to save all questions:', error);
+        showToast('Failed to save all questions', 'error');
       }
     }
 
@@ -2164,6 +2354,8 @@ async function initializeApp() {
         AppState.sessionListener();
       }
 
+      updateInviteButton(quizId);
+
       // Update UI
       const quiz = AppState.quizzes.find(q => q.id === quizId);
       const banner = document.getElementById('quizStatusBanner');
@@ -2277,6 +2469,10 @@ async function initializeApp() {
           updatedBy: USER_EMAIL
         }, { merge: true });
 
+        if (status === 'OPEN') {
+          await preseedRosterSessions(quizId);
+        }
+
         showToast(`Quiz ${status === 'OPEN' ? 'opened' : 'closed'}`, 'success');
         await loadQuizzes();
         selectQuizForProctoring(quizId);
@@ -2285,6 +2481,88 @@ async function initializeApp() {
         console.error('[TEACHER] Failed to update quiz status:', error);
         showToast('Failed to update quiz status', 'error');
       }
+    }
+
+    function getQuizRosterCourseId(quizId) {
+      const quiz = AppState.quizzes.find(q => q.id === quizId);
+      return quiz?.rosterCourseId || null;
+    }
+
+    function updateInviteButton(quizId) {
+      const rosterCourseId = getQuizRosterCourseId(quizId);
+      const btn = document.getElementById('sendInvitesBtn');
+      if (!btn) return;
+      btn.disabled = !rosterCourseId;
+    }
+
+    async function preseedRosterSessions(quizId) {
+      const rosterCourseId = getQuizRosterCourseId(quizId);
+      if (!rosterCourseId) return;
+
+      try {
+        const rosterSnapshot = await db.collection('courses').doc(rosterCourseId)
+          .collection('roster').get();
+
+        if (rosterSnapshot.empty) {
+          return;
+        }
+
+        const sessionSnapshot = await db.collection('sessions').doc(quizId)
+          .collection('students').get();
+        const existingIds = new Set(sessionSnapshot.docs.map(doc => doc.id));
+
+        const batch = db.batch();
+        rosterSnapshot.docs.forEach(doc => {
+          if (existingIds.has(doc.id)) return;
+          const data = doc.data();
+          const sessionRef = db.collection('sessions').doc(quizId)
+            .collection('students').doc(doc.id);
+          batch.set(sessionRef, {
+            email: data.email || doc.id,
+            name: data.name || '',
+            block: data.block || '',
+            status: 'invited',
+            connectedAt: null,
+            lastHeartbeat: null,
+            violations: [],
+            progress: 0
+          }, { merge: true });
+        });
+
+        await batch.commit();
+      } catch (error) {
+        console.error('[TEACHER] Failed to preseed roster sessions:', error);
+        showToast('Failed to preseed roster sessions', 'error');
+      }
+    }
+
+    function sendInvitesForActiveQuiz() {
+      const quizId = document.getElementById('activeQuizSelect').value;
+      if (!quizId) {
+        showToast('Please select a quiz first', 'warning');
+        return;
+      }
+
+      const rosterCourseId = getQuizRosterCourseId(quizId);
+      if (!rosterCourseId) {
+        showToast('No roster attached to this quiz', 'warning');
+        return;
+      }
+
+      showToast('Sending invites...', 'info');
+      google.script.run
+        .withSuccessHandler((result) => {
+          if (result?.success) {
+            showToast(`Invites sent: ${result.sent}`, 'success');
+          } else {
+            showToast('Failed to send invites', 'error');
+          }
+        })
+        .withFailureHandler((error) => {
+          console.error('[INVITES] Failed to send invites:', error);
+          showToast('Failed to send invites', 'error');
+        })
+        .sendQuizInvites(quizId, rosterCourseId);
     }
 
     // ============================================
@@ -2413,6 +2691,108 @@ async function initializeApp() {
       }
     }
 
+    async function createCourse() {
+      const name = document.getElementById('newCourseName').value.trim();
+      const block = document.getElementById('newCourseBlock').value.trim();
+
+      if (!name) {
+        showToast('Please enter a course name', 'warning');
+        return;
+      }
+
+      try {
+        await db.collection('courses').add({
+          name,
+          block,
+          createdBy: USER_EMAIL,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          rosterCount: 0
+        });
+
+        document.getElementById('newCourseName').value = '';
+        document.getElementById('newCourseBlock').value = '';
+        showToast('Course created', 'success');
+        await loadCourses();
+      } catch (error) {
+        console.error('[COURSES] Failed to create course:', error);
+        showToast('Failed to create course', 'error');
+      }
+    }
+
+    function parseRosterCsv(text) {
+      return text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => line.split(',').map(cell => cell.trim()))
+        .filter(parts => parts[0]);
+    }
+
+    async function importRoster() {
+      const courseId = document.getElementById('courseSelect').value;
+      if (!courseId) {
+        showToast('Please select a course', 'warning');
+        return;
+      }
+
+      const rawCsv = document.getElementById('rosterCsvInput').value.trim();
+      if (!rawCsv) {
+        showToast('Paste roster CSV first', 'warning');
+        return;
+      }
+
+      const rows = parseRosterCsv(rawCsv);
+      if (rows.length === 0) {
+        showToast('No valid roster rows found', 'warning');
+        return;
+      }
+
+      try {
+        const batch = db.batch();
+        let validCount = 0;
+
+        rows.forEach(([email, name = '', block = '']) => {
+          const normalizedEmail = docIdFromEmail(email);
+          if (!normalizedEmail || !normalizedEmail.includes('@')) {
+            return;
+          }
+
+          const rosterRef = db.collection('courses').doc(courseId)
+            .collection('roster').doc(normalizedEmail);
+
+          batch.set(rosterRef, {
+            email: normalizedEmail,
+            name,
+            block: block || '',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          validCount += 1;
+        });
+
+        if (validCount === 0) {
+          showToast('No valid emails found', 'warning');
+          return;
+        }
+
+        await batch.commit();
+
+        const rosterSnapshot = await db.collection('courses').doc(courseId)
+          .collection('roster').get();
+        await db.collection('courses').doc(courseId).update({
+          rosterCount: rosterSnapshot.size,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showToast(`Roster updated: ${validCount} students`, 'success');
+        document.getElementById('rosterCsvInput').value = '';
+        await loadCourses();
+      } catch (error) {
+        console.error('[COURSES] Failed to import roster:', error);
+        showToast('Failed to import roster', 'error');
+      }
+    }
+
     async function removeTeacher(email) {
       if (email === USER_EMAIL) {
         showToast("You can't remove yourself", 'warning');
@@ -2438,11 +2818,44 @@ async function initializeApp() {
     async function initializeStudentView() {
       console.log('[STUDENT] Initializing student view...');
 
-      // Listen to global state
-      setupGlobalStateListener();
+      const inviteQuizId = getInviteQuizId();
+      if (inviteQuizId) {
+        setupInviteQuizListener(inviteQuizId);
+      } else {
+        // Listen to global state
+        setupGlobalStateListener();
+      }
 
       // Setup proctoring
       setupProctoring();
+    }
+
+    function getInviteQuizId() {
+      const params = new URLSearchParams(window.location.search);
+      const quizId = params.get('quiz');
+      return quizId ? quizId.trim() : null;
+    }
+
+    function setupInviteQuizListener(quizId) {
+      const unsub = db.collection('quizzes').doc(quizId)
+        .onSnapshot(async (doc) => {
+          if (!doc.exists) {
+            showToast('Quiz not found', 'error');
+            showScreen('waitingScreen');
+            return;
+          }
+
+          const data = doc.data() || {};
+          if (data.status === 'OPEN') {
+            AppState.currentQuizId = quizId;
+            await registerStudent();
+            await loadExam(quizId);
+          } else {
+            showScreen('waitingScreen');
+          }
+        });
+
+      AppState.unsubscribers.push(unsub);
     }
 
     function setupGlobalStateListener() {
@@ -2482,6 +2895,14 @@ async function initializeApp() {
           if (AppState.isBlocked) {
             showBlockedScreen();
             return;
+          }
+
+          if (data.status === 'invited') {
+            await sessionRef.update({
+              status: 'active',
+              lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp(),
+              connectedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
           }
         } else {
           // Create new session
