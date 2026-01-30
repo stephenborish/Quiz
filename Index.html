@@ -1200,6 +1200,7 @@
     <div class="loading-text" id="loadingText">Initializing Secure Assessment Platform...</div>
     <div class="loading-actions">
       <button class="btn btn-outline" onclick="location.reload()">Retry</button>
+      <a id="openAppLink" class="btn btn-outline" target="_blank" rel="noopener">Open in new tab</a>
     </div>
   </div>
 
@@ -1651,13 +1652,23 @@
     const USER_ROLE = '<?= userRole ?>';
     const FIREBASE_CONFIG = <?!= firebaseConfig ?>;
     const APP_URL = '<?= appUrl ?>';
+    const AUTH_TOKEN = '<?= authToken ?>';
 
     // ============================================
     // INITIALIZE FIREBASE
     // ============================================
-    firebase.initializeApp(FIREBASE_CONFIG);
-    const db = firebase.firestore();
-    const storage = firebase.storage();
+    let db;
+    let storage;
+    try {
+      if (!FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
+        throw new Error('Missing Firebase configuration.');
+      }
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+      storage = firebase.storage();
+    } catch (error) {
+      console.error('[INIT] Firebase initialization failed:', error);
+    }
 
     // ============================================
     // APPLICATION STATE
@@ -1770,12 +1781,40 @@
     // ============================================
 
     function failInitialization(message) {
+      stopInitWatchdog();
       DOM.loadingOverlay.classList.add('error');
       const loadingText = document.getElementById('loadingText');
       if (loadingText) {
         loadingText.textContent = message || 'Initialization failed. Please try again.';
       }
       showToast(message || 'Initialization failed', 'error');
+    }
+
+    function setLoadingStatus(message) {
+      const loadingText = document.getElementById('loadingText');
+      if (loadingText) {
+        loadingText.textContent = message;
+      }
+    }
+
+    let initWatchdog = null;
+
+    function startInitWatchdog(timeoutMs) {
+      if (initWatchdog) {
+        clearTimeout(initWatchdog);
+      }
+      initWatchdog = setTimeout(() => {
+        if (!DOM.loadingOverlay.classList.contains('hidden')) {
+          failInitialization('Initialization is taking longer than expected. Please retry.');
+        }
+      }, timeoutMs);
+    }
+
+    function stopInitWatchdog() {
+      if (initWatchdog) {
+        clearTimeout(initWatchdog);
+        initWatchdog = null;
+      }
     }
 
     function withTimeout(promise, timeoutMs, timeoutMessage) {
@@ -1787,11 +1826,29 @@
 
 async function initializeApp() {
       console.log('[INIT] Starting application...');
+      const openAppLink = document.getElementById('openAppLink');
+      if (openAppLink) {
+        openAppLink.href = APP_URL || window.location.href;
+      }
+      startInitWatchdog(25000);
+      setLoadingStatus('Preparing configuration...');
+
+      if (!db || !storage) {
+        failInitialization('Configuration error. Please contact your administrator.');
+        return;
+      }
+
+      if (!AUTH_TOKEN || AUTH_TOKEN === 'null' || AUTH_TOKEN === 'undefined') {
+        failInitialization('Authentication token missing. Please reload the page.');
+        return;
+      }
+
+      setLoadingStatus('Authenticating...');
       
       // 1. WAIT FOR SIGN IN (Crucial Step)
       try {
         await withTimeout(
-          firebase.auth().signInWithCustomToken('<?= authToken ?>'),
+          firebase.auth().signInWithCustomToken(AUTH_TOKEN),
           15000,
           'Sign-in timed out. Please retry.'
         );
@@ -1806,13 +1863,24 @@ async function initializeApp() {
 
       try {
         if (IS_TEACHER) {
-          await initializeTeacherDashboard();
+          setLoadingStatus('Loading teacher dashboard...');
+          await withTimeout(
+            initializeTeacherDashboard(),
+            15000,
+            'Loading teacher dashboard timed out.'
+          );
         } else {
-          await initializeStudentView();
+          setLoadingStatus('Loading student view...');
+          await withTimeout(
+            initializeStudentView(),
+            15000,
+            'Loading student view timed out.'
+          );
         }
 
         DOM.loadingOverlay.classList.add('hidden');
         DOM.app.classList.remove('hidden');
+        stopInitWatchdog();
 
       } catch (error) {
         console.error('[INIT] Failed:', error);
@@ -3294,6 +3362,16 @@ async function initializeApp() {
     // START APPLICATION
     // ============================================
     document.addEventListener('DOMContentLoaded', initializeApp);
+
+    window.addEventListener('error', (event) => {
+      console.error('[INIT] Unhandled error:', event.error || event.message);
+      failInitialization('An unexpected error occurred during initialization.');
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('[INIT] Unhandled promise rejection:', event.reason);
+      failInitialization('An unexpected error occurred during initialization.');
+    });
   </script>
 </body>
 </html>
