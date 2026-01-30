@@ -1652,13 +1652,23 @@
     const USER_ROLE = '<?= userRole ?>';
     const FIREBASE_CONFIG = <?!= firebaseConfig ?>;
     const APP_URL = '<?= appUrl ?>';
+    const AUTH_TOKEN = '<?= authToken ?>';
 
     // ============================================
     // INITIALIZE FIREBASE
     // ============================================
-    firebase.initializeApp(FIREBASE_CONFIG);
-    const db = firebase.firestore();
-    const storage = firebase.storage();
+    let db;
+    let storage;
+    try {
+      if (!FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
+        throw new Error('Missing Firebase configuration.');
+      }
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+      storage = firebase.storage();
+    } catch (error) {
+      console.error('[INIT] Firebase initialization failed:', error);
+    }
 
     // ============================================
     // APPLICATION STATE
@@ -1821,12 +1831,24 @@ async function initializeApp() {
         openAppLink.href = APP_URL || window.location.href;
       }
       startInitWatchdog(25000);
+      setLoadingStatus('Preparing configuration...');
+
+      if (!db || !storage) {
+        failInitialization('Configuration error. Please contact your administrator.');
+        return;
+      }
+
+      if (!AUTH_TOKEN || AUTH_TOKEN === 'null' || AUTH_TOKEN === 'undefined') {
+        failInitialization('Authentication token missing. Please reload the page.');
+        return;
+      }
+
       setLoadingStatus('Authenticating...');
       
       // 1. WAIT FOR SIGN IN (Crucial Step)
       try {
         await withTimeout(
-          firebase.auth().signInWithCustomToken('<?= authToken ?>'),
+          firebase.auth().signInWithCustomToken(AUTH_TOKEN),
           15000,
           'Sign-in timed out. Please retry.'
         );
@@ -3340,6 +3362,16 @@ async function initializeApp() {
     // START APPLICATION
     // ============================================
     document.addEventListener('DOMContentLoaded', initializeApp);
+
+    window.addEventListener('error', (event) => {
+      console.error('[INIT] Unhandled error:', event.error || event.message);
+      failInitialization('An unexpected error occurred during initialization.');
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('[INIT] Unhandled promise rejection:', event.reason);
+      failInitialization('An unexpected error occurred during initialization.');
+    });
   </script>
 </body>
 </html>
