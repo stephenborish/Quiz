@@ -1,5 +1,4 @@
-/**
- * Secure Assessment Platform - Server Backend (Code.gs)
+/*** Secure Assessment Platform - Server Backend (Code.gs)
  * ======================================================
  *
  * Google Apps Script Web App serving as the serverless backend.
@@ -103,7 +102,8 @@ function doGet(e) {
     template.appTitle = APP_CONFIG.title;
     template.appVersion = APP_CONFIG.version;
     template.serverTimestamp = new Date().toISOString();
-
+    template.authToken = getFirebaseToken(userEmail, isTeacher); 
+    
     // Evaluate template and configure output
     const htmlOutput = template.evaluate();
     htmlOutput.setTitle(APP_CONFIG.title);
@@ -541,4 +541,23 @@ function showScriptProperties() {
       console.log(`${key}: ${props[key]}`);
     }
   }
+}
+
+
+// --- PASTE AT BOTTOM OF Code.gs ---
+function getFirebaseToken(userEmail, isTeacher) {
+  const p = PropertiesService.getScriptProperties();
+  const key = p.getProperty('FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n');
+  const email = p.getProperty('FIREBASE_CLIENT_EMAIL');
+  
+  const header = Utilities.base64EncodeWebSafe(JSON.stringify({alg:'RS256',typ:'JWT'})).replace(/=/g,'');
+  const payload = Utilities.base64EncodeWebSafe(JSON.stringify({
+    iss: email, sub: email, aud: "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
+    iat: Math.floor(Date.now()/1000), exp: Math.floor(Date.now()/1000)+3600,
+    uid: userEmail.replace(/[.]/g, '_'), 
+    claims: { email: userEmail, teacher: isTeacher }
+  })).replace(/=/g,'');
+  
+  const signature = Utilities.base64EncodeWebSafe(Utilities.computeRsaSha256Signature(header+'.'+payload, key)).replace(/=/g,'');
+  return header + '.' + payload + '.' + signature;
 }
