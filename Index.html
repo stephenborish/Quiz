@@ -1645,6 +1645,11 @@
        ============================================ -->
   <script>
     // ============================================
+    // SCRIPT START - Debug marker
+    // ============================================
+    console.log('[SCRIPT] Main script starting...');
+
+    // ============================================
     // SERVER-INJECTED VARIABLES (TRUSTED)
     // ============================================
     const USER_EMAIL = '<?= userEmail ?>';
@@ -1654,20 +1659,34 @@
     const APP_URL = '<?= appUrl ?>';
     const AUTH_TOKEN = '<?= authToken ?>';
 
+    console.log('[SCRIPT] Variables injected. USER_EMAIL:', USER_EMAIL, 'IS_TEACHER:', IS_TEACHER);
+    console.log('[SCRIPT] AUTH_TOKEN exists:', !!AUTH_TOKEN && AUTH_TOKEN !== 'null' && AUTH_TOKEN !== 'undefined');
+
     // ============================================
     // INITIALIZE FIREBASE
     // ============================================
-    let db;
-    let storage;
+    let db = null;
+    let storage = null;
+    let firebaseInitError = null;
+
     try {
+      // Check if Firebase SDK loaded
+      if (typeof firebase === 'undefined') {
+        throw new Error('Firebase SDK not loaded. Check network connectivity.');
+      }
+
       if (!FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
         throw new Error('Missing Firebase configuration.');
       }
+
+      console.log('[FIREBASE] Initializing with project:', FIREBASE_CONFIG.projectId);
       firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.firestore();
       storage = firebase.storage();
+      console.log('[FIREBASE] Initialized successfully');
     } catch (error) {
-      console.error('[INIT] Firebase initialization failed:', error);
+      console.error('[FIREBASE] Initialization failed:', error);
+      firebaseInitError = error;
     }
 
     // ============================================
@@ -1825,21 +1844,36 @@
     }
 
 async function initializeApp() {
-      console.log('[INIT] Starting application...');
-      const openAppLink = document.getElementById('openAppLink');
-      if (openAppLink) {
-        openAppLink.href = APP_URL || window.location.href;
-      }
-      startInitWatchdog(25000);
-      setLoadingStatus('Preparing configuration...');
+      console.log('[INIT] Starting application initialization...');
 
-      if (!db || !storage) {
-        failInitialization('Configuration error. Please contact your administrator.');
-        return;
-      }
+      try {
+        const openAppLink = document.getElementById('openAppLink');
+        if (openAppLink) {
+          openAppLink.href = APP_URL || window.location.href;
+        }
+        startInitWatchdog(25000);
+        setLoadingStatus('Preparing configuration...');
 
-      if (!AUTH_TOKEN || AUTH_TOKEN === 'null' || AUTH_TOKEN === 'undefined') {
-        failInitialization('Authentication token missing. Please reload the page.');
+        // Check for Firebase initialization errors first
+        if (firebaseInitError) {
+          failInitialization('Firebase error: ' + firebaseInitError.message);
+          return;
+        }
+
+        if (!db || !storage) {
+          failInitialization('Configuration error: Firebase services not available. Please contact your administrator.');
+          return;
+        }
+
+        if (!AUTH_TOKEN || AUTH_TOKEN === 'null' || AUTH_TOKEN === 'undefined' || AUTH_TOKEN === '') {
+          failInitialization('Authentication token missing. Please reload the page.');
+          return;
+        }
+
+        console.log('[INIT] Configuration validated, proceeding with auth...');
+      } catch (earlyError) {
+        console.error('[INIT] Early initialization error:', earlyError);
+        failInitialization('Initialization error: ' + earlyError.message);
         return;
       }
 
@@ -3361,17 +3395,41 @@ async function initializeApp() {
     // ============================================
     // START APPLICATION
     // ============================================
-    document.addEventListener('DOMContentLoaded', initializeApp);
+    console.log('[SCRIPT] Setting up initialization triggers...');
+
+    // Handle DOMContentLoaded or immediate execution if already loaded
+    if (document.readyState === 'loading') {
+      console.log('[SCRIPT] DOM still loading, adding DOMContentLoaded listener');
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('[SCRIPT] DOMContentLoaded fired, calling initializeApp');
+        initializeApp();
+      });
+    } else {
+      // DOM already loaded (interactive or complete)
+      console.log('[SCRIPT] DOM already loaded (readyState:', document.readyState, '), calling initializeApp directly');
+      // Use setTimeout to ensure all scripts have finished executing
+      setTimeout(() => {
+        console.log('[SCRIPT] Executing initializeApp via setTimeout');
+        initializeApp();
+      }, 0);
+    }
 
     window.addEventListener('error', (event) => {
-      console.error('[INIT] Unhandled error:', event.error || event.message);
-      failInitialization('An unexpected error occurred during initialization.');
+      console.error('[ERROR] Unhandled error:', event.error || event.message);
+      // Only call failInitialization if DOM elements are available
+      if (typeof failInitialization === 'function') {
+        failInitialization('An unexpected error occurred: ' + (event.message || 'Unknown error'));
+      }
     });
 
     window.addEventListener('unhandledrejection', (event) => {
-      console.error('[INIT] Unhandled promise rejection:', event.reason);
-      failInitialization('An unexpected error occurred during initialization.');
+      console.error('[ERROR] Unhandled promise rejection:', event.reason);
+      if (typeof failInitialization === 'function') {
+        failInitialization('An unexpected error occurred: ' + (event.reason?.message || event.reason || 'Unknown error'));
+      }
     });
+
+    console.log('[SCRIPT] Main script setup complete');
   </script>
 </body>
 </html>
