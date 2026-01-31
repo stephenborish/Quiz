@@ -563,33 +563,64 @@ function sendQuizInvites(quizId, courseId) {
     throw new Error('Unauthorized.');
   }
 
+  // Rate limiting: 1 minute cooldown between sends for same quiz
+  const cache = CacheService.getScriptCache();
+  const rateLimitKey = `invite_sent_${quizId}`;
+  const lastSent = cache.get(rateLimitKey);
+
+  if (lastSent) {
+    const lastSentTime = parseInt(lastSent, 10);
+    const now = Date.now();
+    const cooldownMs = 60000; // 1 minute
+    const elapsed = now - lastSentTime;
+
+    if (elapsed < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - elapsed) / 1000);
+      throw new Error(`Please wait ${remainingSeconds} seconds before sending invites again.`);
+    }
+  }
+
   const rosterDocs = listFirestoreDocuments(`courses/${courseId}/roster`);
   const appUrl = APP_CONFIG.appUrl || ScriptApp.getService().getUrl();
   const quizLink = `${appUrl}?quiz=${encodeURIComponent(quizId)}`;
 
   let sent = 0;
+  const maxRecipients = 100; // Prevent accidental spam
 
   rosterDocs.forEach((doc) => {
+    // Enforce max recipients limit
+    if (sent >= maxRecipients) {
+      return;
+    }
+
     const fields = doc.fields || {};
     const emailField = fields.email && fields.email.stringValue ? fields.email.stringValue : '';
     const rosterEmail = emailField || doc.name.split('/').pop();
     const nameField = fields.name && fields.name.stringValue ? fields.name.stringValue : '';
 
-    if (!rosterEmail) {
+    if (!rosterEmail || !rosterEmail.includes('@')) {
       return;
     }
 
-    const subject = `Quiz Invite: ${APP_CONFIG.title}`;
-    const greeting = nameField ? `Hello ${nameField},` : 'Hello,';
-    const body = `${greeting}\n\n` +
-      `You have been invited to take a quiz. Use the link below to access the quiz:\n\n` +
-      `${quizLink}\n\n` +
-      `If the quiz is not open yet, you will see the waiting screen until your teacher opens it.\n\n` +
-      `Thank you.`;
+    try {
+      const subject = `Quiz Invite: ${APP_CONFIG.title}`;
+      const greeting = nameField ? `Hello ${nameField},` : 'Hello,';
+      const body = `${greeting}\n\n` +
+        `You have been invited to take a quiz. Use the link below to access the quiz:\n\n` +
+        `${quizLink}\n\n` +
+        `If the quiz is not open yet, you will see the waiting screen until your teacher opens it.\n\n` +
+        `Thank you.`;
 
-    MailApp.sendEmail(rosterEmail, subject, body);
-    sent += 1;
+      MailApp.sendEmail(rosterEmail, subject, body);
+      sent += 1;
+    } catch (emailError) {
+      console.error(`[INVITES] Failed to send to ${rosterEmail}:`, emailError);
+      // Continue with other emails
+    }
   });
+
+  // Record this send time for rate limiting
+  cache.put(rateLimitKey, Date.now().toString(), 120); // Cache for 2 minutes
 
   return { success: true, sent: sent };
 }

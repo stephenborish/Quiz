@@ -1,0 +1,38 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches:
+      - main
+      - claude/**
+  workflow_dispatch:  # Allows manual trigger from GitHub mobile app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Create clasprc.json
+        run: |
+          mkdir -p ~/.config/@google
+          echo '${{ secrets.CLASP_CREDENTIALS }}' > ~/.config/@google/clasprc.json
+
+      - name: Push to Apps Script
+        run: clasp push
+
+      - name: Deployment Summary
+        run: |
+          echo "✅ Successfully deployed to Apps Script!"
+          echo "Script ID: 1t0nNRgRA0bxkWgMEnrjTpGwL-dZHGyvsd7QWYidLk32mWp0FeBsElIZb"
+          echo "Files deployed: Code.gs, Index.html"

@@ -1,0 +1,21 @@
+# Git files
+.git/**
+.gitignore
+.clasp.json
+.claspignore
+
+# Firebase rules (deployed separately)
+firestore.rules
+storage.rules
+
+# Documentation and config
+README.md
+*.md
+
+# Node modules
+node_modules/**
+package.json
+package-lock.json
+
+# Other files
+.DS_Store
