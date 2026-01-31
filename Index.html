@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Secure Assessment Platform - Real-time exam proctoring and analytics">
   <meta name="theme-color" content="#1a1a2e">
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' https: data: blob:;
+    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com;
+    font-src 'self' data:;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'self' https://*.google.com;
+  ">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title><?= appTitle ?></title>
 
   <!-- ============================================
@@ -132,6 +147,24 @@
     .user-badge.student {
       background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
       color: white;
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--gray-light);
+      color: var(--gray);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-logout:hover {
+      background: var(--danger);
+      color: white;
+      border-color: var(--danger);
     }
 
     .main-content {
@@ -1237,6 +1270,9 @@
         <span id="userBadge" class="user-badge <?= isTeacher ? 'teacher' : 'student' ?>">
           <?= userRole ?>
         </span>
+        <button id="logoutBtn" class="btn-logout" onclick="logout()" title="Sign out">
+          🚪 Logout
+        </button>
       </div>
     </header>
 
@@ -1671,13 +1707,13 @@
       FIREBASE_CONFIG = <?!= firebaseConfig ?>;
       console.log('[SCRIPT] Firebase config parsed successfully');
     } catch (configError) {
-      console.error('[SCRIPT] Firebase config parse error:', configError);
+      logger.error('[SCRIPT] Firebase config parse error:', configError);
     }
 
-    console.log('[SCRIPT] Variables injected. USER_EMAIL:', USER_EMAIL, 'IS_TEACHER:', IS_TEACHER);
-    console.log('[SCRIPT] AUTH_TOKEN exists:', !!AUTH_TOKEN && AUTH_TOKEN !== '' && AUTH_TOKEN !== 'null');
-    console.log('[SCRIPT] AUTH_TOKEN_ERROR:', AUTH_TOKEN_ERROR || '(none)');
-    console.log('[SCRIPT] FIREBASE_CONFIG valid:', !!FIREBASE_CONFIG && !!FIREBASE_CONFIG.apiKey);
+    logger.log('[SCRIPT] Variables injected. USER_EMAIL:', USER_EMAIL, 'IS_TEACHER:', IS_TEACHER);
+    logger.log('[SCRIPT] AUTH_TOKEN exists:', !!AUTH_TOKEN && AUTH_TOKEN !== '' && AUTH_TOKEN !== 'null');
+    logger.log('[SCRIPT] AUTH_TOKEN_ERROR:', AUTH_TOKEN_ERROR || '(none)');
+    logger.log('[SCRIPT] FIREBASE_CONFIG valid:', !!FIREBASE_CONFIG && !!FIREBASE_CONFIG.apiKey);
 
     // ============================================
     // INITIALIZE FIREBASE
@@ -1700,11 +1736,24 @@
       firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.firestore();
       storage = firebase.storage();
-      console.log('[FIREBASE] Initialized successfully');
+      logger.log('[FIREBASE] Initialized successfully');
     } catch (error) {
-      console.error('[FIREBASE] Initialization failed:', error);
+      logger.error('[FIREBASE] Initialization failed:', error);
       firebaseInitError = error;
     }
+
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    const DEBUG_MODE = false; // Set to false in production
+
+    // Safe console logging
+    const logger = {
+      log: (...args) => DEBUG_MODE && console.log(...args),
+      warn: (...args) => console.warn(...args), // Always show warnings
+      error: (...args) => console.error(...args), // Always show errors
+      info: (...args) => DEBUG_MODE && console.info(...args)
+    };
 
     // ============================================
     // APPLICATION STATE
@@ -1731,7 +1780,8 @@
       selectedConfidence: null,
       hasSubmitted: false,
       tabSwitchTimer: null,
-      answers: {}
+      answers: {},
+      heartbeatIntervalId: null
     };
 
     // ============================================
@@ -1772,15 +1822,56 @@
     }
 
     /**
-     * Show toast notification
+     * Escape HTML to prevent XSS attacks
+     */
+    function escapeHTML(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    /**
+     * Sanitize URL to prevent javascript: protocol and XSS
+     */
+    function sanitizeURL(url) {
+      if (!url) return '';
+      const trimmed = url.trim().toLowerCase();
+      if (trimmed.startsWith('javascript:') ||
+          trimmed.startsWith('data:') ||
+          trimmed.startsWith('vbscript:')) {
+        return '';
+      }
+      return url;
+    }
+
+    /**
+     * Validate email format
+     */
+    function isValidEmail(email) {
+      if (!email) return false;
+      const trimmed = email.trim();
+      // RFC 5322 simplified regex
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(trimmed);
+    }
+
+    /**
+     * Show toast notification (XSS-safe)
      */
     function showToast(message, type = 'info') {
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <span style="font-size: 18px;">${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
-        <span>${message}</span>
-      `;
+
+      const icon = document.createElement('span');
+      icon.style.fontSize = '18px';
+      icon.textContent = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+
+      const text = document.createElement('span');
+      text.textContent = message;
+
+      toast.appendChild(icon);
+      toast.appendChild(text);
       DOM.toastContainer.appendChild(toast);
 
       setTimeout(() => {
@@ -1810,6 +1901,86 @@
       if (!timestamp) return 'N/A';
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
       return date.toLocaleString();
+    }
+
+    /**
+     * Monitor session timeout and warn user
+     * Firebase custom tokens expire after 1 hour
+     */
+    function startSessionTimeoutMonitor() {
+      const sessionDuration = 60 * 60 * 1000; // 1 hour
+      const warningTime = 55 * 60 * 1000; // Warn at 55 minutes
+
+      // Warning before expiration
+      setTimeout(() => {
+        showToast('Your session will expire in 5 minutes. Please save your work.', 'warning');
+
+        // Show another warning at 58 minutes
+        setTimeout(() => {
+          showToast('Your session will expire in 2 minutes. Please save your work now.', 'warning');
+        }, 3 * 60 * 1000);
+
+      }, warningTime);
+
+      // Auto-logout at expiration
+      setTimeout(() => {
+        showToast('Session expired. Reloading...', 'error');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }, sessionDuration);
+    }
+
+    /**
+     * Logout function with proper cleanup
+     */
+    async function logout() {
+      if (!confirm('Are you sure you want to sign out?')) {
+        return;
+      }
+
+      try {
+        // Show loading state
+        DOM.loadingOverlay.classList.remove('hidden');
+
+        // Unsubscribe from all Firestore listeners
+        AppState.unsubscribers.forEach(unsubscribe => {
+          try {
+            unsubscribe();
+          } catch (e) {
+            console.error('[LOGOUT] Failed to unsubscribe:', e);
+          }
+        });
+        AppState.unsubscribers = [];
+
+        // Clear timers
+        if (AppState.tabSwitchTimer) {
+          clearTimeout(AppState.tabSwitchTimer);
+          AppState.tabSwitchTimer = null;
+        }
+
+        // Sign out from Firebase
+        await firebase.auth().signOut();
+
+        // Clear application state
+        Object.keys(AppState).forEach(key => {
+          if (Array.isArray(AppState[key])) {
+            AppState[key] = [];
+          } else if (typeof AppState[key] === 'object' && AppState[key] !== null) {
+            AppState[key] = {};
+          } else {
+            AppState[key] = null;
+          }
+        });
+
+        // Reload the page to return to authentication
+        window.location.reload();
+
+      } catch (error) {
+        console.error('[LOGOUT] Logout failed:', error);
+        showToast('Logout failed. Please try again.', 'error');
+        DOM.loadingOverlay.classList.add('hidden');
+      }
     }
 
     // ============================================
@@ -1909,6 +2080,10 @@ async function initializeApp() {
           'Sign-in timed out. Please retry.'
         );
         console.log('[AUTH] Signed in successfully');
+
+        // Start session timeout monitoring
+        startSessionTimeoutMonitor();
+
       } catch (error) {
         console.error('[AUTH] Sign in failed', error);
         failInitialization('Authentication failed. Please retry.');
@@ -2003,27 +2178,86 @@ async function initializeApp() {
         return;
       }
 
-      container.innerHTML = AppState.quizzes.map(quiz => `
-        <div class="quiz-card">
-          <h3 class="quiz-card-title">${quiz.title || 'Untitled Quiz'}</h3>
-          <p class="text-muted" style="font-size: 13px;">${quiz.description || 'No description'}</p>
-          <div class="quiz-card-meta">
-            <span class="status-badge ${quiz.status?.toLowerCase() || 'draft'}">${quiz.status || 'DRAFT'}</span>
-            <div class="flex gap-10">
-              <button class="btn btn-sm btn-outline" onclick="editQuiz('${quiz.id}')">Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteQuiz('${quiz.id}')">Delete</button>
-            </div>
-          </div>
-        </div>
-      `).join('');
+      // Clear container
+      container.innerHTML = '';
+
+      // Build quiz cards safely
+      AppState.quizzes.forEach(quiz => {
+        const card = document.createElement('div');
+        card.className = 'quiz-card';
+
+        const title = document.createElement('h3');
+        title.className = 'quiz-card-title';
+        title.textContent = quiz.title || 'Untitled Quiz';
+
+        const desc = document.createElement('p');
+        desc.className = 'text-muted';
+        desc.style.fontSize = '13px';
+        desc.textContent = quiz.description || 'No description';
+
+        const meta = document.createElement('div');
+        meta.className = 'quiz-card-meta';
+
+        const badge = document.createElement('span');
+        badge.className = `status-badge ${quiz.status?.toLowerCase() || 'draft'}`;
+        badge.textContent = quiz.status || 'DRAFT';
+
+        const actions = document.createElement('div');
+        actions.className = 'flex gap-10';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-sm btn-outline';
+        editBtn.textContent = 'Edit';
+        editBtn.onclick = () => editQuiz(quiz.id);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-sm btn-danger';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = () => deleteQuiz(quiz.id);
+
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+        meta.appendChild(badge);
+        meta.appendChild(actions);
+
+        card.appendChild(title);
+        card.appendChild(desc);
+        card.appendChild(meta);
+        container.appendChild(card);
+      });
     }
 
     function updateQuizSelects() {
-      const options = '<option value="">Select Quiz...</option>' +
-        AppState.quizzes.map(q => `<option value="${q.id}">${q.title || 'Untitled'}</option>`).join('');
+      const activeSelect = document.getElementById('activeQuizSelect');
+      const matrixSelect = document.getElementById('matrixQuizSelect');
 
-      document.getElementById('activeQuizSelect').innerHTML = options;
-      document.getElementById('matrixQuizSelect').innerHTML = options;
+      // Clear existing options
+      activeSelect.innerHTML = '';
+      matrixSelect.innerHTML = '';
+
+      // Add default option
+      const defaultOpt1 = document.createElement('option');
+      defaultOpt1.value = '';
+      defaultOpt1.textContent = 'Select Quiz...';
+      activeSelect.appendChild(defaultOpt1);
+
+      const defaultOpt2 = document.createElement('option');
+      defaultOpt2.value = '';
+      defaultOpt2.textContent = 'Select Quiz...';
+      matrixSelect.appendChild(defaultOpt2);
+
+      // Add quiz options safely
+      AppState.quizzes.forEach(q => {
+        const opt1 = document.createElement('option');
+        opt1.value = q.id;
+        opt1.textContent = q.title || 'Untitled';
+        activeSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = q.id;
+        opt2.textContent = q.title || 'Untitled';
+        matrixSelect.appendChild(opt2);
+      });
 
       // Add change listeners
       document.getElementById('activeQuizSelect').onchange = (e) => {
@@ -2050,23 +2284,43 @@ async function initializeApp() {
     }
 
     function updateCourseSelects() {
-      const options = '<option value="">Select course...</option>' +
-        AppState.courses.map(course => `
-          <option value="${course.id}">${course.name || 'Course'}${course.block ? ` (${course.block})` : ''}</option>
-        `).join('');
-
       const courseSelect = document.getElementById('courseSelect');
       const rosterSelect = document.getElementById('newQuizRosterSelect');
 
       if (courseSelect) {
-        courseSelect.innerHTML = options;
+        courseSelect.innerHTML = '';
+
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Select course...';
+        courseSelect.appendChild(defaultOpt);
+
+        AppState.courses.forEach(course => {
+          const opt = document.createElement('option');
+          opt.value = course.id;
+          opt.textContent = `${course.name || 'Course'}${course.block ? ` (${course.block})` : ''}`;
+          courseSelect.appendChild(opt);
+        });
+
         courseSelect.onchange = (e) => {
           AppState.selectedCourseId = e.target.value || null;
         };
       }
 
       if (rosterSelect) {
-        rosterSelect.innerHTML = '<option value="">No roster</option>' + options;
+        rosterSelect.innerHTML = '';
+
+        const noRosterOpt = document.createElement('option');
+        noRosterOpt.value = '';
+        noRosterOpt.textContent = 'No roster';
+        rosterSelect.appendChild(noRosterOpt);
+
+        AppState.courses.forEach(course => {
+          const opt = document.createElement('option');
+          opt.value = course.id;
+          opt.textContent = `${course.name || 'Course'}${course.block ? ` (${course.block})` : ''}`;
+          rosterSelect.appendChild(opt);
+        });
       }
     }
 
@@ -2086,8 +2340,19 @@ async function initializeApp() {
       const description = document.getElementById('newQuizDescription').value.trim();
       const rosterCourseId = document.getElementById('newQuizRosterSelect').value || null;
 
+      // Input validation
       if (!title) {
         showToast('Please enter a quiz title', 'warning');
+        return;
+      }
+
+      if (title.length > 200) {
+        showToast('Quiz title must be 200 characters or less', 'warning');
+        return;
+      }
+
+      if (description.length > 1000) {
+        showToast('Description must be 1000 characters or less', 'warning');
         return;
       }
 
@@ -2145,67 +2410,189 @@ async function initializeApp() {
 
     function renderQuestionsList(questions) {
       const container = document.getElementById('questionsList');
+      container.innerHTML = '';
 
       if (questions.length === 0) {
-        container.innerHTML = `
-          <div class="text-center text-muted" style="padding: 30px;">
-            No questions yet. Add your first question!
-          </div>
-        `;
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'text-center text-muted';
+        emptyDiv.style.padding = '30px';
+        emptyDiv.textContent = 'No questions yet. Add your first question!';
+        container.appendChild(emptyDiv);
         return;
       }
 
-      container.innerHTML = questions.map((q, idx) => `
-        <div class="question-editor" data-question-id="${q.id}">
-          <div class="flex" style="justify-content: space-between; margin-bottom: 15px;">
-            <strong>Question ${idx + 1}</strong>
-            <div class="flex gap-10">
-              <button class="btn btn-sm btn-outline" onclick="saveQuestion('${q.id}')">Save</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteQuestion('${q.id}')">Delete</button>
-            </div>
-          </div>
+      questions.forEach((q, idx) => {
+        const questionEditor = document.createElement('div');
+        questionEditor.className = 'question-editor';
+        questionEditor.dataset.questionId = q.id;
 
-          <div class="form-group">
-            <label class="form-label">Question Text</label>
-            <textarea class="form-textarea" id="qtext_${q.id}" onchange="updateQuestion('${q.id}')">${q.text || ''}</textarea>
-          </div>
+        // Header with question number and buttons
+        const header = document.createElement('div');
+        header.className = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.marginBottom = '15px';
 
-          <div class="form-group">
-            <label class="form-label">Question Image (Optional)</label>
-            <div class="upload-zone" onclick="triggerImageUpload('question', '${q.id}')">
-              ${q.imageUrl ? `<img src="${q.imageUrl}" class="image-preview" id="qimg_preview_${q.id}">` : `
-                <div class="upload-icon">📷</div>
-                <div class="upload-text">Click to upload image</div>
-              `}
-            </div>
-            <input type="file" id="qimg_input_${q.id}" class="hidden" accept="image/*" onchange="uploadQuestionImage('${q.id}', this)">
-            <div id="qimg_progress_${q.id}" class="progress-bar hidden"><div class="progress-fill" style="width: 0%"></div></div>
-          </div>
+        const questionLabel = document.createElement('strong');
+        questionLabel.textContent = `Question ${idx + 1}`;
 
-          <div class="form-group">
-            <label class="form-label">Answer Options</label>
-            <div id="options_${q.id}">
-              ${(q.options || []).map((opt, optIdx) => `
-                <div class="option-editor">
-                  <input type="text" class="form-input" value="${opt.text || ''}"
-                    onchange="updateOption('${q.id}', ${optIdx}, 'text', this.value)">
-                  <label class="correct-checkbox">
-                    <input type="radio" name="correct_${q.id}" ${opt.isCorrect ? 'checked' : ''}
-                      onchange="updateOption('${q.id}', ${optIdx}, 'isCorrect', true)">
-                    Correct
-                  </label>
-                  <button class="btn btn-sm btn-outline" onclick="triggerOptionImageUpload('${q.id}', ${optIdx})">
-                    ${opt.imageUrl ? '🖼️' : '📷'}
-                  </button>
-                  <input type="file" id="optimg_${q.id}_${optIdx}" class="hidden" accept="image/*"
-                    onchange="uploadOptionImage('${q.id}', ${optIdx}, this)">
-                </div>
-              `).join('')}
-            </div>
-            <button class="btn btn-sm btn-outline mt-10" onclick="addOption('${q.id}')">+ Add Option</button>
-          </div>
-        </div>
-      `).join('');
+        const buttonGroup = document.createElement('div');
+        buttonGroup.className = 'flex gap-10';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-sm btn-outline';
+        saveBtn.textContent = 'Save';
+        saveBtn.onclick = () => saveQuestion(q.id);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-sm btn-danger';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = () => deleteQuestion(q.id);
+
+        buttonGroup.appendChild(saveBtn);
+        buttonGroup.appendChild(deleteBtn);
+        header.appendChild(questionLabel);
+        header.appendChild(buttonGroup);
+
+        // Question text
+        const textGroup = document.createElement('div');
+        textGroup.className = 'form-group';
+
+        const textLabel = document.createElement('label');
+        textLabel.className = 'form-label';
+        textLabel.textContent = 'Question Text';
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'form-textarea';
+        textarea.id = `qtext_${q.id}`;
+        textarea.value = q.text || '';
+        textarea.onchange = () => updateQuestion(q.id);
+
+        textGroup.appendChild(textLabel);
+        textGroup.appendChild(textarea);
+
+        // Question image
+        const imageGroup = document.createElement('div');
+        imageGroup.className = 'form-group';
+
+        const imageLabel = document.createElement('label');
+        imageLabel.className = 'form-label';
+        imageLabel.textContent = 'Question Image (Optional)';
+
+        const uploadZone = document.createElement('div');
+        uploadZone.className = 'upload-zone';
+        uploadZone.onclick = () => triggerImageUpload('question', q.id);
+
+        if (q.imageUrl) {
+          const img = document.createElement('img');
+          img.className = 'image-preview';
+          img.id = `qimg_preview_${q.id}`;
+          img.src = sanitizeURL(q.imageUrl);
+          uploadZone.appendChild(img);
+        } else {
+          const icon = document.createElement('div');
+          icon.className = 'upload-icon';
+          icon.textContent = '📷';
+
+          const text = document.createElement('div');
+          text.className = 'upload-text';
+          text.textContent = 'Click to upload image';
+
+          uploadZone.appendChild(icon);
+          uploadZone.appendChild(text);
+        }
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = `qimg_input_${q.id}`;
+        fileInput.className = 'hidden';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = function() { uploadQuestionImage(q.id, this); };
+
+        const progressDiv = document.createElement('div');
+        progressDiv.id = `qimg_progress_${q.id}`;
+        progressDiv.className = 'progress-bar hidden';
+        const progressFill = document.createElement('div');
+        progressFill.className = 'progress-fill';
+        progressFill.style.width = '0%';
+        progressDiv.appendChild(progressFill);
+
+        imageGroup.appendChild(imageLabel);
+        imageGroup.appendChild(uploadZone);
+        imageGroup.appendChild(fileInput);
+        imageGroup.appendChild(progressDiv);
+
+        // Options
+        const optionsGroup = document.createElement('div');
+        optionsGroup.className = 'form-group';
+
+        const optionsLabel = document.createElement('label');
+        optionsLabel.className = 'form-label';
+        optionsLabel.textContent = 'Answer Options';
+
+        const optionsContainer = document.createElement('div');
+        optionsContainer.id = `options_${q.id}`;
+
+        (q.options || []).forEach((opt, optIdx) => {
+          const optionEditor = document.createElement('div');
+          optionEditor.className = 'option-editor';
+
+          const optInput = document.createElement('input');
+          optInput.type = 'text';
+          optInput.className = 'form-input';
+          optInput.value = opt.text || '';
+          optInput.onchange = (e) => updateOption(q.id, optIdx, 'text', e.target.value);
+
+          const correctLabel = document.createElement('label');
+          correctLabel.className = 'correct-checkbox';
+
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = `correct_${q.id}`;
+          radio.checked = opt.isCorrect || false;
+          radio.onchange = () => updateOption(q.id, optIdx, 'isCorrect', true);
+
+          const correctText = document.createTextNode(' Correct');
+
+          correctLabel.appendChild(radio);
+          correctLabel.appendChild(correctText);
+
+          const imageBtn = document.createElement('button');
+          imageBtn.className = 'btn btn-sm btn-outline';
+          imageBtn.textContent = opt.imageUrl ? '🖼️' : '📷';
+          imageBtn.onclick = () => triggerOptionImageUpload(q.id, optIdx);
+
+          const optFileInput = document.createElement('input');
+          optFileInput.type = 'file';
+          optFileInput.id = `optimg_${q.id}_${optIdx}`;
+          optFileInput.className = 'hidden';
+          optFileInput.accept = 'image/*';
+          optFileInput.onchange = function() { uploadOptionImage(q.id, optIdx, this); };
+
+          optionEditor.appendChild(optInput);
+          optionEditor.appendChild(correctLabel);
+          optionEditor.appendChild(imageBtn);
+          optionEditor.appendChild(optFileInput);
+
+          optionsContainer.appendChild(optionEditor);
+        });
+
+        const addOptionBtn = document.createElement('button');
+        addOptionBtn.className = 'btn btn-sm btn-outline mt-10';
+        addOptionBtn.textContent = '+ Add Option';
+        addOptionBtn.onclick = () => addOption(q.id);
+
+        optionsGroup.appendChild(optionsLabel);
+        optionsGroup.appendChild(optionsContainer);
+        optionsGroup.appendChild(addOptionBtn);
+
+        // Assemble question editor
+        questionEditor.appendChild(header);
+        questionEditor.appendChild(textGroup);
+        questionEditor.appendChild(imageGroup);
+        questionEditor.appendChild(optionsGroup);
+
+        container.appendChild(questionEditor);
+      });
     }
 
     async function addNewQuestion() {
@@ -2277,6 +2664,24 @@ async function initializeApp() {
       const draft = buildQuestionDraft(questionId);
       if (!draft) return;
 
+      // Input validation
+      if (draft.text.length > 5000) {
+        if (showErrors) {
+          showToast('Question text must be 5000 characters or less', 'warning');
+        }
+        return;
+      }
+
+      // Validate options
+      for (let opt of draft.options) {
+        if (opt.text && opt.text.length > 1000) {
+          if (showErrors) {
+            showToast('Option text must be 1000 characters or less', 'warning');
+          }
+          return;
+        }
+      }
+
       try {
         await db.collection('quizzes').doc(AppState.currentEditingQuiz)
           .collection('questions').doc(questionId)
@@ -2290,7 +2695,7 @@ async function initializeApp() {
           showToast('Saved', 'success');
         }
       } catch (error) {
-        console.error('[TEACHER] Failed to save question:', error);
+        logger.error('[TEACHER] Failed to save question:', error);
         if (showErrors) {
           showToast('Failed to save question', 'error');
         }
@@ -2697,10 +3102,41 @@ async function initializeApp() {
       }
     }
 
+    // Rate limiting for email invitations
+    const inviteRateLimiter = {
+      lastSent: {},
+      cooldownMs: 60000, // 1 minute cooldown between sends
+
+      canSend: function(quizId) {
+        const now = Date.now();
+        const lastSentTime = this.lastSent[quizId] || 0;
+        return (now - lastSentTime) > this.cooldownMs;
+      },
+
+      recordSent: function(quizId) {
+        this.lastSent[quizId] = Date.now();
+      },
+
+      getTimeRemaining: function(quizId) {
+        const now = Date.now();
+        const lastSentTime = this.lastSent[quizId] || 0;
+        const elapsed = now - lastSentTime;
+        const remaining = this.cooldownMs - elapsed;
+        return Math.ceil(remaining / 1000); // seconds
+      }
+    };
+
     function sendInvitesForActiveQuiz() {
       const quizId = document.getElementById('activeQuizSelect').value;
       if (!quizId) {
         showToast('Please select a quiz first', 'warning');
+        return;
+      }
+
+      // Rate limiting check
+      if (!inviteRateLimiter.canSend(quizId)) {
+        const secondsRemaining = inviteRateLimiter.getTimeRemaining(quizId);
+        showToast(`Please wait ${secondsRemaining} seconds before sending invites again`, 'warning');
         return;
       }
 
@@ -2710,7 +3146,14 @@ async function initializeApp() {
         return;
       }
 
+      // Confirmation dialog to prevent accidental sends
+      if (!confirm(`Send quiz invitations to all students in the roster?\n\nThis will send email notifications to all students.`)) {
+        return;
+      }
+
       showToast('Sending invites...', 'info');
+      inviteRateLimiter.recordSent(quizId);
+
       google.script.run
         .withSuccessHandler((result) => {
           if (result?.success) {
@@ -2829,12 +3272,25 @@ async function initializeApp() {
     async function addTeacher() {
       const email = document.getElementById('newTeacherEmail').value.trim().toLowerCase();
 
-      if (!email || !email.includes('@')) {
-        showToast('Please enter a valid email', 'warning');
+      // Comprehensive email validation
+      if (!isValidEmail(email)) {
+        showToast('Please enter a valid email address', 'warning');
+        return;
+      }
+
+      // CSRF protection: Confirmation step
+      if (!confirm(`Add ${email} as an authorized teacher?\n\nThis will grant them full access to create quizzes, view student data, and manage courses.`)) {
         return;
       }
 
       try {
+        // Check if teacher already exists
+        const existingDoc = await db.collection('authorized_teachers').doc(email).get();
+        if (existingDoc.exists) {
+          showToast('Teacher already authorized', 'warning');
+          return;
+        }
+
         await db.collection('authorized_teachers').doc(email).set({
           email,
           displayName: email.split('@')[0],
@@ -2846,6 +3302,19 @@ async function initializeApp() {
         document.getElementById('newTeacherEmail').value = '';
         showToast('Teacher added successfully', 'success');
 
+        // Log audit event
+        try {
+          await db.collection('audit_log').add({
+            action: 'teacher_added',
+            email: USER_EMAIL,
+            targetEmail: email,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            details: { addedBy: USER_EMAIL }
+          });
+        } catch (auditError) {
+          console.error('[AUDIT] Failed to log teacher addition:', auditError);
+        }
+
       } catch (error) {
         console.error('[ADMIN] Failed to add teacher:', error);
         showToast('Failed to add teacher', 'error');
@@ -2856,8 +3325,19 @@ async function initializeApp() {
       const name = document.getElementById('newCourseName').value.trim();
       const block = document.getElementById('newCourseBlock').value.trim();
 
+      // Input validation
       if (!name) {
         showToast('Please enter a course name', 'warning');
+        return;
+      }
+
+      if (name.length > 200) {
+        showToast('Course name must be 200 characters or less', 'warning');
+        return;
+      }
+
+      if (block.length > 50) {
+        showToast('Block/period must be 50 characters or less', 'warning');
         return;
       }
 
@@ -2915,7 +3395,10 @@ async function initializeApp() {
 
         rows.forEach(([email, name = '', block = '']) => {
           const normalizedEmail = docIdFromEmail(email);
-          if (!normalizedEmail || !normalizedEmail.includes('@')) {
+
+          // Comprehensive email validation
+          if (!isValidEmail(normalizedEmail)) {
+            console.warn('[ROSTER] Invalid email skipped:', email);
             return;
           }
 
@@ -2924,8 +3407,8 @@ async function initializeApp() {
 
           batch.set(rosterRef, {
             email: normalizedEmail,
-            name,
-            block: block || '',
+            name: name.trim(),
+            block: block.trim() || '',
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           }, { merge: true });
           validCount += 1;
@@ -3109,17 +3592,47 @@ async function initializeApp() {
     }
 
     function startHeartbeat(studentDocId) {
-      setInterval(async () => {
+      // Clear any existing heartbeat
+      if (AppState.heartbeatIntervalId) {
+        clearInterval(AppState.heartbeatIntervalId);
+      }
+
+      let failureCount = 0;
+      const maxFailures = 3;
+
+      // Improved heartbeat with 5-second interval for better monitoring
+      AppState.heartbeatIntervalId = setInterval(async () => {
         if (AppState.isBlocked || !AppState.currentQuizId) return;
 
         try {
           await db.collection('sessions').doc(AppState.currentQuizId)
             .collection('students').doc(studentDocId)
-            .update({ lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp() });
+            .update({
+              lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp(),
+              status: AppState.isBlocked ? 'blocked' : 'active'
+            });
+
+          // Reset failure count on success
+          failureCount = 0;
+
         } catch (error) {
-          // Silent fail
+          failureCount++;
+          console.warn(`[HEARTBEAT] Failed (${failureCount}/${maxFailures}):`, error.message);
+
+          // If too many failures, show warning
+          if (failureCount >= maxFailures) {
+            showToast('Connection unstable. Your progress may not be saved.', 'warning');
+          }
         }
-      }, 15000);
+      }, 5000); // 5 seconds for better monitoring
+
+      // Store interval ID in unsubscribers for cleanup
+      AppState.unsubscribers.push(() => {
+        if (AppState.heartbeatIntervalId) {
+          clearInterval(AppState.heartbeatIntervalId);
+          AppState.heartbeatIntervalId = null;
+        }
+      });
     }
 
     async function loadExam(quizId) {
@@ -3185,11 +3698,16 @@ async function initializeApp() {
 
       document.getElementById('questionText').textContent = question.text || 'No question text';
 
-      // Question image
+      // Question image (with URL sanitization)
       const questionImage = document.getElementById('questionImage');
       if (question.imageUrl) {
-        questionImage.src = question.imageUrl;
-        questionImage.classList.remove('hidden');
+        const sanitized = sanitizeURL(question.imageUrl);
+        if (sanitized) {
+          questionImage.src = sanitized;
+          questionImage.classList.remove('hidden');
+        } else {
+          questionImage.classList.add('hidden');
+        }
       } else {
         questionImage.classList.add('hidden');
       }
@@ -3199,15 +3717,39 @@ async function initializeApp() {
       const shuffledOptions = fisherYatesShuffle(options);
       const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-      document.getElementById('optionsList').innerHTML = shuffledOptions.map((opt, idx) => `
-        <button class="option-btn" onclick="selectAnswer(this, '${opt.id}', '${(opt.text || '').replace(/'/g, "\\'")}')">
-          <span class="option-letter">${letters[idx]}</span>
-          <div class="option-content">
-            <span>${opt.text || 'Option'}</span>
-            ${opt.imageUrl ? `<img src="${opt.imageUrl}" class="option-image">` : ''}
-          </div>
-        </button>
-      `).join('');
+      const optionsList = document.getElementById('optionsList');
+      optionsList.innerHTML = '';
+
+      shuffledOptions.forEach((opt, idx) => {
+        const button = document.createElement('button');
+        button.className = 'option-btn';
+        button.onclick = function() {
+          selectAnswer(this, opt.id, opt.text || 'Option');
+        };
+
+        const letterSpan = document.createElement('span');
+        letterSpan.className = 'option-letter';
+        letterSpan.textContent = letters[idx];
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'option-content';
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = opt.text || 'Option';
+
+        contentDiv.appendChild(textSpan);
+
+        if (opt.imageUrl) {
+          const img = document.createElement('img');
+          img.className = 'option-image';
+          img.src = sanitizeURL(opt.imageUrl);
+          contentDiv.appendChild(img);
+        }
+
+        button.appendChild(letterSpan);
+        button.appendChild(contentDiv);
+        optionsList.appendChild(button);
+      });
 
       AppState.selectedAnswer = null;
     }

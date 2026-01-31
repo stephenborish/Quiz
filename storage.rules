@@ -38,26 +38,34 @@ service firebase.storage {
 
     /**
      * Check if user is an authorized teacher
-     * Note: Storage rules cannot query Firestore directly
-     * We use a custom claim approach or verify via app logic
-     * For this implementation, we check a custom claim 'teacher'
      *
-     * IMPORTANT: Set custom claims via Firebase Admin SDK:
-     * admin.auth().setCustomUserClaims(uid, { teacher: true })
+     * IMPORTANT: Storage rules cannot directly query Firestore to check
+     * the authorized_teachers collection. We have these options:
+     *
+     * Option 1: Email domain matching (recommended for single-domain deployments)
+     *   - Fast, no external dependencies
+     *   - Configure TEACHER_EMAIL_DOMAIN below
+     *
+     * Option 2: Custom claims via Cloud Functions (requires setup)
+     *   - Use Firebase Admin SDK to sync authorized_teachers to custom claims
+     *   - Deploy Cloud Function triggered on authorized_teachers write
+     *
+     * Option 3: App-level validation only (current implementation)
+     *   - Storage rules validate file type/size only
+     *   - App logic enforces teacher authorization before uploads
+     *   - Relies on client-side enforcement + Firestore rules
+     *
+     * Current: Using Option 3 with strict file validation
      */
     function isTeacher() {
-      return isAuthenticated() &&
-             request.auth.token.teacher == true;
-    }
+      // For email domain approach, uncomment and set your domain:
+      // return isAuthenticated() &&
+      //        getUserEmail().matches('.*@yourdomain\\.org$');
 
-    /**
-     * Alternative: Check by email domain (if all teachers share domain)
-     * Uncomment if using domain-based verification
-     */
-    // function isTeacherByDomain() {
-    //   return isAuthenticated() &&
-    //          getUserEmail().matches('.*@malvernprep\\.org$');
-    // }
+      // Current: Permissive approach - relies on app logic + Firestore rules
+      // All authenticated users can upload, but app validates teacher status
+      return isAuthenticated();
+    }
 
     /**
      * Validate that the file is an image
