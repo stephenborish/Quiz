@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -20,7 +21,9 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title><?= appTitle ?></title>
+  <title>
+    <?= appTitle ?>
+  </title>
 
   <!-- ============================================
        EMBEDDED CSS STYLES
@@ -61,7 +64,8 @@
       box-sizing: border-box;
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
       overflow: auto;
     }
@@ -221,13 +225,18 @@
       flex: 1;
       overflow: hidden;
       position: relative;
+      height: 100%;
+      /* Ensure full height */
     }
 
     .tab-panel {
       display: none;
       height: 100%;
       overflow-y: auto;
+      /* Scroll within panel */
       padding: 20px;
+      padding-bottom: 80px;
+      /* Space for bottom elements */
     }
 
     .tab-panel.active {
@@ -627,8 +636,15 @@
     }
 
     @keyframes pulse-danger {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7); }
-      50% { box-shadow: 0 0 0 8px rgba(245, 101, 101, 0); }
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7);
+      }
+
+      50% {
+        box-shadow: 0 0 0 8px rgba(245, 101, 101, 0);
+      }
     }
 
     .matrix-legend {
@@ -709,8 +725,15 @@
     }
 
     @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-15px); }
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-15px);
+      }
     }
 
     .waiting-title {
@@ -744,8 +767,17 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
     }
 
     /* Blocked Screen */
@@ -1019,7 +1051,9 @@
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .loading-text {
@@ -1048,17 +1082,36 @@
       min-width: 300px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       animation: slideIn 0.3s ease;
+      color: #fff;
     }
 
     @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
 
-    .toast.success { border-left: 4px solid var(--success); }
-    .toast.error { border-left: 4px solid var(--danger); }
-    .toast.warning { border-left: 4px solid var(--warning); }
-    .toast.info { border-left: 4px solid var(--info); }
+    .toast.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .toast.warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    .toast.info {
+      border-left: 4px solid var(--info);
+    }
 
     /* ==========================================
        QUIZ BUILDER STYLES
@@ -1104,19 +1157,27 @@
     .question-editor {
       background: #f8fafc;
       border-radius: var(--border-radius);
-      padding: 20px;
-      margin-bottom: 20px;
+      padding: 25px;
+      margin-bottom: 25px;
       border: 1px solid var(--gray-light);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     .option-editor {
       display: flex;
-      gap: 10px;
+      gap: 15px;
       align-items: center;
-      margin-bottom: 10px;
-      padding: 15px;
+      margin-bottom: 12px;
+      padding: 18px;
       background: #ffffff;
       border-radius: var(--border-radius);
+      border: 1px solid #e2e8f0;
+      transition: var(--transition);
+    }
+
+    .option-editor:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
     #questionsList {
@@ -1208,22 +1269,66 @@
     /* ==========================================
        UTILITY CLASSES
        ========================================== */
-    .hidden { display: none !important; }
-    .text-center { text-align: center; }
-    .text-success { color: var(--success); }
-    .text-danger { color: var(--danger); }
-    .text-warning { color: var(--warning); }
-    .text-muted { color: var(--gray); }
-    .mt-10 { margin-top: 10px; }
-    .mt-20 { margin-top: 20px; }
-    .mb-10 { margin-bottom: 10px; }
-    .mb-20 { margin-bottom: 20px; }
-    .flex { display: flex; }
-    .flex-center { display: flex; align-items: center; justify-content: center; }
-    .gap-10 { gap: 10px; }
-    .gap-20 { gap: 20px; }
+    .hidden {
+      display: none !important;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-success {
+      color: var(--success);
+    }
+
+    .text-danger {
+      color: var(--danger);
+    }
+
+    .text-warning {
+      color: var(--warning);
+    }
+
+    .text-muted {
+      color: var(--gray);
+    }
+
+    .mt-10 {
+      margin-top: 10px;
+    }
+
+    .mt-20 {
+      margin-top: 20px;
+    }
+
+    .mb-10 {
+      margin-bottom: 10px;
+    }
+
+    .mb-20 {
+      margin-bottom: 20px;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .flex-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gap-10 {
+      gap: 10px;
+    }
+
+    .gap-20 {
+      gap: 20px;
+    }
   </style>
 </head>
+
 <body>
   <!-- Debug script - runs first to verify JS execution -->
   <script>
@@ -1263,10 +1368,14 @@
     <header class="header">
       <div class="header-left">
         <h1 class="header-logo">Secure Assessment</h1>
-        <span class="header-version">v<?= appVersion ?></span>
+        <span class="header-version">v
+          <?= appVersion ?>
+        </span>
       </div>
       <div class="header-user">
-        <span class="user-email"><?= userEmail ?></span>
+        <span class="user-email">
+          <?= userEmail ?>
+        </span>
         <span id="userBadge" class="user-badge <?= isTeacher ? 'teacher' : 'student' ?>">
           <?= userRole ?>
         </span>
@@ -1324,7 +1433,8 @@
                   </button>
                 </div>
               </div>
-              <div id="quizStatusBanner" class="hidden" style="padding: 15px; border-radius: 8px; text-align: center; font-weight: 600;"></div>
+              <div id="quizStatusBanner" class="hidden"
+                style="padding: 15px; border-radius: 8px; text-align: center; font-weight: 600;"></div>
             </div>
 
             <div class="card">
@@ -1495,6 +1605,27 @@
                 </div>
               </div>
 
+              <div class="form-group mt-20">
+                <label class="form-label">Manage Courses</label>
+                <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Block</th>
+                        <th>Students</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="coursesListBody">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Loading...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <div class="form-group">
                 <label class="form-label">Select Course</label>
                 <select id="courseSelect" class="form-select">
@@ -1504,7 +1635,8 @@
 
               <div class="form-group">
                 <label class="form-label">Import Roster CSV (email,name,block)</label>
-                <textarea id="rosterCsvInput" class="form-textarea" placeholder="student1@example.com,Student One,A&#10;student2@example.com,Student Two,B"></textarea>
+                <textarea id="rosterCsvInput" class="form-textarea"
+                  placeholder="student1@example.com,Student One,A&#10;student2@example.com,Student Two,B"></textarea>
                 <div class="mt-10">
                   <button class="btn btn-primary" onclick="importRoster()">Import / Update Roster</button>
                 </div>
@@ -1519,7 +1651,8 @@
               <div class="form-group">
                 <label class="form-label">Add New Teacher</label>
                 <div class="flex gap-10">
-                  <input type="email" id="newTeacherEmail" class="form-input" placeholder="teacher@school.edu" style="flex: 1;">
+                  <input type="email" id="newTeacherEmail" class="form-input" placeholder="teacher@school.edu"
+                    style="flex: 1;">
                   <button class="btn btn-success" onclick="addTeacher()">Add Teacher</button>
                 </div>
               </div>
@@ -1593,7 +1726,8 @@
             <p class="waiting-subtitle">
               Your responses have been recorded. Please wait for your teacher's instructions.
             </p>
-            <div id="completionSummary" class="mt-20" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px;">
+            <div id="completionSummary" class="mt-20"
+              style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px;">
               <!-- Summary populated by JS -->
             </div>
           </div>
@@ -1678,7 +1812,7 @@
        FIREBASE SDK (Compat 9.22.0)
        ============================================ -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script> 
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
@@ -1838,8 +1972,8 @@
       if (!url) return '';
       const trimmed = url.trim().toLowerCase();
       if (trimmed.startsWith('javascript:') ||
-          trimmed.startsWith('data:') ||
-          trimmed.startsWith('vbscript:')) {
+        trimmed.startsWith('data:') ||
+        trimmed.startsWith('vbscript:')) {
         return '';
       }
       return url;
@@ -2031,7 +2165,7 @@
       ]);
     }
 
-async function initializeApp() {
+    async function initializeApp() {
       console.log('[INIT] Starting application initialization...');
 
       try {
@@ -2071,7 +2205,7 @@ async function initializeApp() {
       }
 
       setLoadingStatus('Authenticating...');
-      
+
       // 1. WAIT FOR SIGN IN (Crucial Step)
       try {
         await withTimeout(
@@ -2276,6 +2410,7 @@ async function initializeApp() {
 
         AppState.courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         updateCourseSelects();
+        renderCoursesList();
 
       } catch (error) {
         console.error('[COURSES] Failed to load courses:', error);
@@ -2506,7 +2641,7 @@ async function initializeApp() {
         fileInput.id = `qimg_input_${q.id}`;
         fileInput.className = 'hidden';
         fileInput.accept = 'image/*';
-        fileInput.onchange = function() { uploadQuestionImage(q.id, this); };
+        fileInput.onchange = function () { uploadQuestionImage(q.id, this); };
 
         const progressDiv = document.createElement('div');
         progressDiv.id = `qimg_progress_${q.id}`;
@@ -2566,7 +2701,7 @@ async function initializeApp() {
           optFileInput.id = `optimg_${q.id}_${optIdx}`;
           optFileInput.className = 'hidden';
           optFileInput.accept = 'image/*';
-          optFileInput.onchange = function() { uploadOptionImage(q.id, optIdx, this); };
+          optFileInput.onchange = function () { uploadOptionImage(q.id, optIdx, this); };
 
           optionEditor.appendChild(optInput);
           optionEditor.appendChild(correctLabel);
@@ -2758,7 +2893,8 @@ async function initializeApp() {
 
       try {
         const storageRef = storage.ref(`quizzes/${AppState.currentEditingQuiz}/questions/${questionId}_${Date.now()}`);
-        const uploadTask = storageRef.put(file);
+        const metadata = { contentType: file.type };
+        const uploadTask = storageRef.put(file, metadata);
 
         uploadTask.on('state_changed',
           (snapshot) => {
@@ -2799,7 +2935,8 @@ async function initializeApp() {
         showToast('Uploading...', 'info');
 
         const storageRef = storage.ref(`quizzes/${AppState.currentEditingQuiz}/options/${questionId}_opt${optIdx}_${Date.now()}`);
-        const snapshot = await storageRef.put(file);
+        const metadata = { contentType: file.type };
+        const snapshot = await storageRef.put(file, metadata);
         const downloadURL = await snapshot.ref.getDownloadURL();
 
         // Get current question
@@ -3058,7 +3195,14 @@ async function initializeApp() {
       const rosterCourseId = getQuizRosterCourseId(quizId);
       const btn = document.getElementById('sendInvitesBtn');
       if (!btn) return;
-      btn.disabled = !rosterCourseId;
+
+      if (!rosterCourseId) {
+        btn.disabled = true;
+        btn.title = "This quiz does not have a roster attached. Edit the quiz settings to add a roster.";
+      } else {
+        btn.disabled = false;
+        btn.title = "Send email invitations to all students in the roster.";
+      }
     }
 
     async function preseedRosterSessions(quizId) {
@@ -3107,17 +3251,17 @@ async function initializeApp() {
       lastSent: {},
       cooldownMs: 60000, // 1 minute cooldown between sends
 
-      canSend: function(quizId) {
+      canSend: function (quizId) {
         const now = Date.now();
         const lastSentTime = this.lastSent[quizId] || 0;
         return (now - lastSentTime) > this.cooldownMs;
       },
 
-      recordSent: function(quizId) {
+      recordSent: function (quizId) {
         this.lastSent[quizId] = Date.now();
       },
 
-      getTimeRemaining: function(quizId) {
+      getTimeRemaining: function (quizId) {
         const now = Date.now();
         const lastSentTime = this.lastSent[quizId] || 0;
         const elapsed = now - lastSentTime;
@@ -3358,6 +3502,73 @@ async function initializeApp() {
       } catch (error) {
         console.error('[COURSES] Failed to create course:', error);
         showToast('Failed to create course', 'error');
+      }
+    }
+
+    function renderCoursesList() {
+      const tbody = document.getElementById('coursesListBody');
+      const select = document.getElementById('courseSelect');
+
+      // Update Select
+      select.innerHTML = '<option value="">Select course...</option>' +
+        AppState.courses.map(c => `<option value="${c.id}">${c.name} (${c.block})</option>`).join('');
+
+      // Update Table
+      if (AppState.courses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No courses found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = AppState.courses.map(course => `
+        <tr>
+          <td>
+            <input type="text" class="form-input form-input-sm" 
+              value="${course.name}" 
+              onchange="updateCourse('${course.id}', 'name', this.value)">
+          </td>
+          <td>
+            <input type="text" class="form-input form-input-sm" 
+              value="${course.block}" 
+              style="width: 80px;"
+              onchange="updateCourse('${course.id}', 'block', this.value)">
+          </td>
+          <td>${course.rosterCount || 0}</td>
+          <td>
+            <button class="btn btn-sm btn-danger" onclick="deleteCourse('${course.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function updateCourse(courseId, field, value) {
+      try {
+        await db.collection('courses').doc(courseId).update({
+          [field]: value,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('Course updated', 'success');
+      } catch (error) {
+        console.error('[COURSES] Failed to update course:', error);
+        showToast('Failed to update course', 'error');
+      }
+    }
+
+    async function deleteCourse(courseId) {
+      if (!confirm('Are you sure? This will delete the course and all student roster data.')) return;
+
+      try {
+        // Delete roster subcollection
+        const rosterSnapshot = await db.collection('courses').doc(courseId).collection('roster').get();
+        const batch = db.batch();
+        rosterSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        await db.collection('courses').doc(courseId).delete();
+        showToast('Course deleted', 'success');
+        await loadCourses();
+      } catch (error) {
+        console.error('[COURSES] Failed to delete course:', error);
+        showToast('Failed to delete course', 'error');
       }
     }
 
@@ -3723,7 +3934,7 @@ async function initializeApp() {
       shuffledOptions.forEach((opt, idx) => {
         const button = document.createElement('button');
         button.className = 'option-btn';
-        button.onclick = function() {
+        button.onclick = function () {
           selectAnswer(this, opt.id, opt.text || 'Option');
         };
 
@@ -3996,4 +4207,5 @@ async function initializeApp() {
     console.log('[SCRIPT] Main script setup complete');
   </script>
 </body>
+
 </html>
