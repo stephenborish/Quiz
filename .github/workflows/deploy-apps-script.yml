@@ -27,8 +27,21 @@ jobs:
         env:
           CLASP_CREDS: ${{ secrets.CLASP_CREDENTIALS }}
         run: |
+          # Check if credentials secret is set
+          if [ -z "$CLASP_CREDS" ]; then
+            echo "❌ ERROR: CLASP_CREDENTIALS secret is not set or is empty"
+            echo ""
+            echo "📋 To fix this:"
+            echo "1. Run 'clasp login' locally"
+            echo "2. Copy the contents of ~/.clasprc.json"
+            echo "3. Add it as a GitHub secret named CLASP_CREDENTIALS"
+            exit 1
+          fi
+
           echo "$CLASP_CREDS" > ~/.clasprc.json
           echo "✅ Clasp credentials configured"
+
+          # Validate JSON format
           echo "Validating JSON format..."
           if ! jq empty ~/.clasprc.json 2>/dev/null; then
             echo "❌ ERROR: Invalid JSON in CLASP_CREDENTIALS secret"
@@ -36,6 +49,21 @@ jobs:
             exit 1
           fi
           echo "✅ JSON format is valid"
+
+          # Check for required OAuth fields
+          if ! jq -e '.token.access_token' ~/.clasprc.json > /dev/null 2>&1; then
+            echo "⚠️ WARNING: access_token not found in credentials"
+            echo "Credentials may need to be refreshed"
+          fi
+
+          # Check token expiration
+          EXPIRY=$(jq -r '.token.expiry_date // 0' ~/.clasprc.json 2>/dev/null)
+          CURRENT_TIME=$(($(date +%s) * 1000))
+          if [ "$EXPIRY" != "0" ] && [ "$EXPIRY" != "null" ] && [ "$EXPIRY" -lt "$CURRENT_TIME" ]; then
+            echo "⚠️ WARNING: OAuth token appears to be expired"
+            echo "Token expiry: $EXPIRY, Current time: $CURRENT_TIME"
+            echo "Clasp will attempt to refresh using refresh_token"
+          fi
 
       - name: Verify clasp authentication
         run: |
@@ -73,10 +101,30 @@ jobs:
           fi
 
       - name: Push to Apps Script
-        run: clasp push
+        run: |
+          echo "Pushing code to Apps Script..."
+          clasp push -f
+          echo "✅ Push completed successfully"
+
+      - name: Deploy new version
+        run: |
+          echo "Creating new deployment version..."
+          DEPLOY_OUTPUT=$(clasp deploy --description "Auto-deploy from GitHub Actions - $(date -u +%Y-%m-%d_%H:%M:%S)" 2>&1)
+          echo "$DEPLOY_OUTPUT"
+          # Extract deployment ID if available
+          DEPLOY_ID=$(echo "$DEPLOY_OUTPUT" | grep -oP '(?<=- )[A-Za-z0-9_-]+(?= @)' | head -1 || true)
+          if [ -n "$DEPLOY_ID" ]; then
+            echo "✅ New deployment created: $DEPLOY_ID"
+          else
+            echo "⚠️ Could not extract deployment ID, but deploy may have succeeded"
+          fi
 
       - name: Deployment Summary
         run: |
           echo "✅ Successfully deployed to Apps Script!"
           echo "Script ID: 1t0nNRgRA0bxkWgMEnrjTpGwL-dZHGyvsd7QWYidLk32mWp0FeBsElIZb"
-          echo "Files deployed: Code.gs, Index.html"
+          echo "Files deployed: Code.gs, Index.html, appsscript.json"
+          echo ""
+          echo "📋 Next steps:"
+          echo "1. Verify the deployment at: https://script.google.com/macros/s/AKfycbwlDegxdxlTsVbXQhg4gXYEtToZ9P3eks6GTaiP2dRYdqM3HgwYbRCY7MixeYALrbY_Jexec"
+          echo "2. Check the Apps Script dashboard for the latest version"
