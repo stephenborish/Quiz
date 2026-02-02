@@ -25,8 +25,8 @@ jobs:
 
       - name: Create clasprc.json
         run: |
-          mkdir -p ~/.config/@google
-          echo '${{ secrets.CLASP_CREDENTIALS }}' > ~/.config/@google/clasprc.json
+          echo '${{ secrets.CLASP_CREDENTIALS }}' > ~/.clasprc.json
+          echo "✅ Clasp credentials configured"
 
       - name: Push to Apps Script
         run: clasp push
