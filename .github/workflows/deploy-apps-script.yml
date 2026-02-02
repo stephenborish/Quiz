@@ -24,9 +24,23 @@ jobs:
         run: npm install -g @google/clasp
 
       - name: Create clasprc.json
+        env:
+          CLASP_CREDS: ${{ secrets.CLASP_CREDENTIALS }}
         run: |
-          mkdir -p ~/.config/@google
-          echo '${{ secrets.CLASP_CREDENTIALS }}' > ~/.config/@google/clasprc.json
+          echo "$CLASP_CREDS" > ~/.clasprc.json
+          echo "✅ Clasp credentials configured"
+          echo "Validating JSON format..."
+          if ! jq empty ~/.clasprc.json 2>/dev/null; then
+            echo "❌ ERROR: Invalid JSON in CLASP_CREDENTIALS secret"
+            echo "Please check your GitHub secret is valid JSON"
+            exit 1
+          fi
+          echo "✅ JSON format is valid"
+
+      - name: Verify clasp authentication
+        run: |
+          echo "Checking clasp authentication status..."
+          clasp login --status || echo "Proceeding with credentials from ~/.clasprc.json"
 
       - name: Push to Apps Script
         run: clasp push
