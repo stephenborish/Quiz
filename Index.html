@@ -1701,6 +1701,19 @@
     const AUTH_TOKEN = '<?= authToken ?>';
     const AUTH_TOKEN_ERROR = '<?= authTokenError ?>';
 
+    // ============================================
+    // CONFIGURATION (must be before any logger usage)
+    // ============================================
+    const DEBUG_MODE = false; // Set to false in production
+
+    // Safe console logging
+    const logger = {
+      log: (...args) => DEBUG_MODE && console.log(...args),
+      warn: (...args) => console.warn(...args), // Always show warnings
+      error: (...args) => console.error(...args), // Always show errors
+      info: (...args) => DEBUG_MODE && console.info(...args)
+    };
+
     // Parse Firebase config safely
     let FIREBASE_CONFIG = null;
     try {
@@ -1741,19 +1754,6 @@
       logger.error('[FIREBASE] Initialization failed:', error);
       firebaseInitError = error;
     }
-
-    // ============================================
-    // CONFIGURATION
-    // ============================================
-    const DEBUG_MODE = false; // Set to false in production
-
-    // Safe console logging
-    const logger = {
-      log: (...args) => DEBUG_MODE && console.log(...args),
-      warn: (...args) => console.warn(...args), // Always show warnings
-      error: (...args) => console.error(...args), // Always show errors
-      info: (...args) => DEBUG_MODE && console.info(...args)
-    };
 
     // ============================================
     // APPLICATION STATE
