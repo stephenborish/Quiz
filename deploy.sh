@@ -32,7 +32,7 @@ echo ""
 
 # Push files to Apps Script
 echo "📤 Pushing files to Apps Script..."
-clasp push
+clasp push --force
 
 echo ""
 echo "✅ Deployment complete!"
