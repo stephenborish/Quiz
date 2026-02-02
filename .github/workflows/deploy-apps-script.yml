@@ -42,6 +42,36 @@ jobs:
           echo "Checking clasp authentication status..."
           clasp login --status || echo "Proceeding with credentials from ~/.clasprc.json"
 
+      - name: Verify files before push
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing files:"
+          ls -la
+          echo ""
+          echo "Checking for required files:"
+          if [ -f ".clasp.json" ]; then
+            echo "✅ .clasp.json found"
+            cat .clasp.json
+          else
+            echo "❌ .clasp.json NOT FOUND"
+          fi
+          if [ -f "appsscript.json" ]; then
+            echo "✅ appsscript.json found"
+            cat appsscript.json
+          else
+            echo "❌ appsscript.json NOT FOUND"
+          fi
+          if [ -f "Code.gs" ]; then
+            echo "✅ Code.gs found ($(wc -l < Code.gs) lines)"
+          else
+            echo "❌ Code.gs NOT FOUND"
+          fi
+          if [ -f "Index.html" ]; then
+            echo "✅ Index.html found ($(wc -l < Index.html) lines)"
+          else
+            echo "❌ Index.html NOT FOUND"
+          fi
+
       - name: Push to Apps Script
         run: clasp push
 
