@@ -16,10 +16,8 @@
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'self' https://*.google.com;
   ">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>
     <?= appTitle ?>
@@ -2049,37 +2047,45 @@
       toastContainer: document.getElementById('toastContainer')
     };
 
-    // ============================================
-    // UTILITY FUNCTIONS
-    // ============================================
+    async function initializeApp() {
+      console.log('[INIT] initializeApp started');
+      try {
+        if (firebaseInitError) {
+          console.error('[INIT] Firebase failed to load:', firebaseInitError);
+          showToast('System Error: Firebase unavailable', 'error');
+          return;
+        }
 
-    /**
-     * Fisher-Yates Shuffle Algorithm
-     */
-    function fisherYatesShuffle(array) {
-      const arr = [...array];
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+        // Validate Auth Token
+        if (!AUTH_TOKEN || AUTH_TOKEN === 'null' || AUTH_TOKEN === '') {
+          console.error('[INIT] Invalid Auth Token');
+          if (AUTH_TOKEN_ERROR) console.error('[INIT] Auth Token Error:', AUTH_TOKEN_ERROR);
+          showToast('Authentication Error: Please refresh', 'error');
+          return;
+        }
+
+        console.log('[INIT] Authenticating with Firebase...');
+        await firebase.auth().signInWithCustomToken(AUTH_TOKEN);
+        console.log('[INIT] Firebase Auth successful');
+
+        // Check Teacher Status
+        if (IS_TEACHER) {
+          console.log('[INIT] User verified as TEACHER');
+          await setupTeacherDashboard();
+        } else {
+          console.log('[INIT] User identified as STUDENT');
+          await setupStudentView();
+        }
+
+        console.log('[INIT] Removing loading screen...');
+        DOM.loadingOverlay.classList.add('hidden');
+        console.log('[INIT] Loading screen removed');
+
+      } catch (error) {
+        console.error('[INIT] Critical Initialization Error:', error);
+        showToast('Initialization Failed: ' + error.message, 'error');
+        // Do not hide loading screen on critical error to prevent broken UI usage
       }
-      return arr;
-    }
-
-    /**
-     * Normalize email for document ID consistency
-     */
-    function docIdFromEmail(email) {
-      return (email || '').trim().toLowerCase();
-    }
-
-    /**
-     * Escape HTML to prevent XSS attacks
-     */
-    function escapeHTML(str) {
-      if (!str) return '';
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
     }
 
     /**
