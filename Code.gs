@@ -132,8 +132,9 @@ function doGet(e) {
       serverTimestamp: new Date().toISOString()
     };
     
-    // Inject the entire bundle as a single Base64 string
-    template.injectedData = Utilities.base64Encode(Utilities.newBlob(JSON.stringify(dataBundle)).getBytes());
+    // Inject the entire bundle as a single Base64 string, stripping any newlines
+    const rawB64 = Utilities.base64Encode(Utilities.newBlob(JSON.stringify(dataBundle)).getBytes());
+    template.injectedData = rawB64.replace(/\r?\n|\r/g, '');
 
     return template.evaluate()
       .setTitle(APP_CONFIG.title)

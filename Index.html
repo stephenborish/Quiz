@@ -6,17 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Secure Assessment Platform - Real-time exam proctoring and analytics">
   <meta name="theme-color" content="#1a1a2e">
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' https: data: blob:;
-    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://*.firebaseapp.com wss://*.firebaseapp.com;
-    font-src 'self' https://fonts.gstatic.com data:;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-  ">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; font-src * data:;">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1451,9 +1442,21 @@
 <body>
   <!-- Debug script - runs first to verify JS execution -->
   <script>
-    console.log('[DEBUG] Script execution test - if you see this, inline scripts work');
-    window.SCRIPT_EXECUTION_VERIFIED = true;
+    console.log('[BOOT] A: Bootstrap started');
+    window.BOOT_LOG = function (msg) {
+      console.log('[BOOT] ' + msg);
+      window.BOOT_ERROR_LOG = window.BOOT_ERROR_LOG || [];
+    };
+    window.onerror = function (msg, url, line) {
+      console.error('[BOOT_ERR] ' + msg + ' at ' + line);
+      return false;
+    };
   </script>
+  <script>window.BOOT_LOG('B: Pre-Storage Div');</script>
+  <div id="SERVER_BUNDLE_STORAGE" style="display:none; visibility:hidden;">
+    <?!= injectedData ?>
+  </div>
+  <script>window.BOOT_LOG('C: Post-Storage Div');</script>
 
   <!-- ============================================
        LOADING OVERLAY
@@ -1986,10 +1989,19 @@
   <!-- ============================================
        FIREBASE SDK (Compat 9.22.0)
        ============================================ -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script>window.BOOT_LOG('D: Loading Firebase App SDK');</script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"
+    onload="window.BOOT_LOG('E: Firebase App SDK Loaded')"></script>
+  <script>window.BOOT_LOG('F: Loading Auth SDK');</script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"
+    onload="window.BOOT_LOG('G: Auth SDK Loaded')"></script>
+  <script>window.BOOT_LOG('H: Loading Firestore SDK');</script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"
+    onload="window.BOOT_LOG('I: Firestore SDK Loaded')"></script>
+  <script>window.BOOT_LOG('J: Loading Storage SDK');</script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"
+    onload="window.BOOT_LOG('K: Storage SDK Loaded')"></script>
+  <script>window.BOOT_LOG('L: Starting Application Logic');</script>
 
   <!-- ============================================
        MAIN APPLICATION JAVASCRIPT
@@ -2003,20 +2015,28 @@
     // ============================================
     // SERVER-INJECTED DATA BUNDLE
     // ============================================
-    // We use a single Base64 encoded bundle to resolve all linting errors 
-    // and ensure robust data transfer between GAS and the client.
+    // We use a robust DOM-based retrieval to avoid JS syntax issues with template tags.
     let BUNDLE = {};
     try {
-      const b64Data = '<?= injectedData ?>';
+      const storageEl = document.getElementById('SERVER_BUNDLE_STORAGE');
+      if (!storageEl) throw new Error('SERVER_BUNDLE_STORAGE element missing');
+
+      const b64Data = storageEl.textContent.trim();
       if (b64Data && b64Data !== '') {
+        // Decode and parse. atob() is supported in all modern browsers.
         BUNDLE = JSON.parse(atob(b64Data));
-        console.log('[SCRIPT] Data bundle successfully decoded');
+        console.log('[SCRIPT] Server data bundle successfully decoded and parsed');
       } else {
-        throw new Error('Injected data bundle is empty');
+        throw new Error('Data bundle in storage is empty');
       }
     } catch (e) {
-      console.error('[SCRIPT] Critical error decoding data bundle:', e);
-      document.getElementById('loadingText').innerHTML = '<span class="text-danger">Initialization Failure: Data Sync Error</span>';
+      console.error('[SCRIPT] CRITICAL: Data bundle failure:', e);
+      document.getElementById('loadingText').innerHTML = `
+        <div class="text-danger">
+          <p>Initialization Failure: Data Sync Error</p>
+          <p class="text-[10px] mt-10 opacity-50 font-mono">${e.message}</p>
+        </div>
+      `;
     }
 
     const USER_EMAIL = BUNDLE.userEmail || 'unknown';
