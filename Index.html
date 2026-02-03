@@ -1250,13 +1250,6 @@
       background: #f8fafc;
     }
 
-    .quiz-card {
-      /* Handled by inline premium implementation for ultra-precision */
-    }
-
-    .quiz-card:hover {
-      /* Handled by inline premium implementation */
-    }
 
     .quiz-card-title {
       font-size: 18px;
@@ -2019,7 +2012,7 @@
     // SERVER-INJECTED VARIABLES (TRUSTED)
     // ============================================
     const USER_EMAIL = '<?= userEmail ?>';
-    const IS_TEACHER = <?= isTeacher ?>;
+    const IS_TEACHER = ('<?= isTeacher ?>' === 'true');
     const USER_ROLE = '<?= userRole ?>';
     const APP_URL = '<?= appUrl ?>';
     const AUTH_TOKEN = '<?= authToken ?>';
@@ -2041,7 +2034,9 @@
     // Parse Firebase config safely
     let FIREBASE_CONFIG = null;
     try {
-      FIREBASE_CONFIG = <?!= firebaseConfig ?>;
+      // Use Base64 to safely inject template expressions without triggering JS linters
+      const b64Config = '<?= Utilities.base64Encode(firebaseConfig) ?>';
+      FIREBASE_CONFIG = JSON.parse(atob(b64Config));
       console.log('[SCRIPT] Firebase config parsed successfully');
     } catch (configError) {
       logger.error('[SCRIPT] Firebase config parse error:', configError);
