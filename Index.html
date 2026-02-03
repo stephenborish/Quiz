@@ -9,10 +9,10 @@
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com;
-    style-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' https: data: blob:;
     connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://*.firebaseapp.com wss://*.firebaseapp.com;
-    font-src 'self' data:;
+    font-src 'self' https://fonts.gstatic.com data:;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
@@ -22,9 +22,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <title>
-    <?= appTitle ?>
-  </title>
+  <title>Assessment Platform</title>
 
   <!-- ============================================
        EMBEDDED CSS STYLES
@@ -1489,17 +1487,11 @@
     <header class="header">
       <div class="header-left">
         <h1 class="header-logo">Secure Assessment</h1>
-        <span class="header-version">v
-          <?= appVersion ?>
-        </span>
+        <span class="header-version">v<span id="headerAppVersion">...</span></span>
       </div>
       <div class="header-user">
-        <span class="user-email">
-          <?= userEmail ?>
-        </span>
-        <span id="userBadge" class="user-badge <?= isTeacher ? 'teacher' : 'student' ?>">
-          <?= userRole ?>
-        </span>
+        <span class="user-email" id="headerUserEmail">...</span>
+        <span id="userBadge" class="user-badge">...</span>
         <button id="logoutBtn" class="btn-logout" onclick="logout()" title="Sign out">
           🚪 Logout
         </button>
@@ -1511,7 +1503,7 @@
       <!-- ==========================================
            TEACHER COMMAND CENTER
            ========================================== -->
-      <div id="teacherView" class="<?= isTeacher ? '' : 'hidden' ?>">
+      <div id="teacherView" class="hidden">
         <!-- Tab Navigation -->
         <nav class="tab-nav">
           <button class="tab-btn active" data-tab="proctoring">
@@ -1843,7 +1835,7 @@
   <!-- ==========================================
            STUDENT EXAM VIEW
            ========================================== -->
-  <div id="studentView" class="<?= isTeacher ? 'hidden' : '' ?>" style="height: 100%;">
+  <div id="studentView" class="hidden" style="height: 100%;">
     <!-- Waiting Room -->
     <div id="waitingScreen" class="screen active">
       <div class="waiting-room">
@@ -2009,42 +2001,61 @@
     console.log('[SCRIPT] Main script starting...');
 
     // ============================================
-    // SERVER-INJECTED VARIABLES (TRUSTED)
+    // SERVER-INJECTED DATA BUNDLE
     // ============================================
-    const USER_EMAIL = '<?= userEmail ?>';
-    const IS_TEACHER = ('<?= isTeacher ?>' === 'true');
-    const USER_ROLE = '<?= userRole ?>';
-    const APP_URL = '<?= appUrl ?>';
-    const AUTH_TOKEN = '<?= authToken ?>';
-    const AUTH_TOKEN_ERROR = '<?= authTokenError ?>';
+    // We use a single Base64 encoded bundle to resolve all linting errors 
+    // and ensure robust data transfer between GAS and the client.
+    let BUNDLE = {};
+    try {
+      const b64Data = '<?= injectedData ?>';
+      if (b64Data && b64Data !== '') {
+        BUNDLE = JSON.parse(atob(b64Data));
+        console.log('[SCRIPT] Data bundle successfully decoded');
+      } else {
+        throw new Error('Injected data bundle is empty');
+      }
+    } catch (e) {
+      console.error('[SCRIPT] Critical error decoding data bundle:', e);
+      document.getElementById('loadingText').innerHTML = '<span class="text-danger">Initialization Failure: Data Sync Error</span>';
+    }
+
+    const USER_EMAIL = BUNDLE.userEmail || 'unknown';
+    const IS_TEACHER = !!BUNDLE.isTeacher;
+    const USER_ROLE = BUNDLE.userRole || 'STUDENT';
+    const APP_URL = BUNDLE.appUrl || '';
+    const AUTH_TOKEN = BUNDLE.authToken || '';
+    const AUTH_TOKEN_ERROR = BUNDLE.authTokenError || '';
+    const FIREBASE_CONFIG = BUNDLE.firebaseConfig || null;
+
+    // Initialize UI elements that were previously template-driven
+    function initInjectedUI() {
+      document.getElementById('headerAppVersion').textContent = BUNDLE.appVersion || '2.0.0';
+      document.getElementById('headerUserEmail').textContent = USER_EMAIL;
+      const badge = document.getElementById('userBadge');
+      badge.textContent = USER_ROLE;
+      badge.classList.add(IS_TEACHER ? 'teacher' : 'student');
+
+      if (IS_TEACHER) {
+        document.getElementById('teacherView').classList.remove('hidden');
+      } else {
+        document.getElementById('studentView').classList.remove('hidden');
+      }
+    }
+    initInjectedUI();
 
     // ============================================
-    // CONFIGURATION (must be before any logger usage)
+    // CONFIGURATION
     // ============================================
-    const DEBUG_MODE = false; // Set to false in production
+    const DEBUG_MODE = false;
 
-    // Safe console logging
     const logger = {
       log: (...args) => DEBUG_MODE && console.log(...args),
-      warn: (...args) => console.warn(...args), // Always show warnings
-      error: (...args) => console.error(...args), // Always show errors
+      warn: (...args) => console.warn(...args),
+      error: (...args) => console.error(...args),
       info: (...args) => DEBUG_MODE && console.info(...args)
     };
 
-    // Parse Firebase config safely
-    let FIREBASE_CONFIG = null;
-    try {
-      // Use Base64 to safely inject template expressions without triggering JS linters
-      const b64Config = '<?= Utilities.base64Encode(firebaseConfig) ?>';
-      FIREBASE_CONFIG = JSON.parse(atob(b64Config));
-      console.log('[SCRIPT] Firebase config parsed successfully');
-    } catch (configError) {
-      logger.error('[SCRIPT] Firebase config parse error:', configError);
-    }
-
-    logger.log('[SCRIPT] Variables injected. USER_EMAIL:', USER_EMAIL, 'IS_TEACHER:', IS_TEACHER);
-    logger.log('[SCRIPT] AUTH_TOKEN exists:', !!AUTH_TOKEN && AUTH_TOKEN !== '' && AUTH_TOKEN !== 'null');
-    logger.log('[SCRIPT] AUTH_TOKEN_ERROR:', AUTH_TOKEN_ERROR || '(none)');
+    logger.log('[SCRIPT] Variables initialized. USER_EMAIL:', USER_EMAIL, 'IS_TEACHER:', IS_TEACHER);
     logger.log('[SCRIPT] FIREBASE_CONFIG valid:', !!FIREBASE_CONFIG && !!FIREBASE_CONFIG.apiKey);
 
     // ============================================

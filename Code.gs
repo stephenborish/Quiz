@@ -105,16 +105,6 @@ function doGet(e) {
     // ----------------------------------------
     const template = HtmlService.createTemplateFromFile('Index');
 
-    // Inject server-side variables (these CANNOT be tampered with)
-    template.userEmail = userEmail;
-    template.isTeacher = isTeacher;
-    template.userRole = userRole;
-    template.firebaseConfig = JSON.stringify(firebaseConfig);
-    template.appTitle = APP_CONFIG.title;
-    template.appVersion = APP_CONFIG.version;
-    template.serverTimestamp = new Date().toISOString();
-    template.appUrl = APP_CONFIG.appUrl || ScriptApp.getService().getUrl();
-
     // Generate auth token with error handling
     let authToken = '';
     let authTokenError = '';
@@ -124,24 +114,33 @@ function doGet(e) {
     } catch (tokenError) {
       console.error('[AUTH] Token generation failed:', tokenError.toString());
       authTokenError = tokenError.message || 'Token generation failed';
-      // Don't throw - let the page load and show the error in the UI
     }
-    template.authToken = authToken;
-    template.authTokenError = authTokenError;
 
-    // Evaluate template and configure output
-    const htmlOutput = template.evaluate();
-    htmlOutput.setTitle(APP_CONFIG.title);
+    // ----------------------------------------
+    // STEP 5: Bundle and Base64 Encode all Variables
+    // ----------------------------------------
+    const dataBundle = {
+      userEmail: userEmail,
+      isTeacher: isTeacher,
+      userRole: userRole,
+      firebaseConfig: firebaseConfig,
+      appTitle: APP_CONFIG.title,
+      appVersion: APP_CONFIG.version,
+      appUrl: APP_CONFIG.appUrl || ScriptApp.getService().getUrl(),
+      authToken: authToken,
+      authTokenError: authTokenError,
+      serverTimestamp: new Date().toISOString()
+    };
+    
+    // Inject the entire bundle as a single Base64 string
+    template.injectedData = Utilities.base64Encode(Utilities.newBlob(JSON.stringify(dataBundle)).getBytes());
 
-    // Allow iframe embedding for LMS integration
-    htmlOutput.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-
-    // Mobile/Chromebook viewport settings
-    htmlOutput.addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-    htmlOutput.addMetaTag('mobile-web-app-capable', 'yes');
-    htmlOutput.addMetaTag('apple-mobile-web-app-capable', 'yes');
-
-    return htmlOutput;
+    return template.evaluate()
+      .setTitle(APP_CONFIG.title)
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
+      .addMetaTag('mobile-web-app-capable', 'yes')
+      .addMetaTag('apple-mobile-web-app-capable', 'yes');
 
   } catch (error) {
     console.error('[ERROR] doGet failed:', error.toString(), error.stack);
