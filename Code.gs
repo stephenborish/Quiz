@@ -723,3 +723,23 @@ function getFirebaseToken(userEmail, isTeacher) {
   const signature = Utilities.base64EncodeWebSafe(Utilities.computeRsaSha256Signature(header+'.'+payload, key)).replace(/=/g,'');
   return header + '.' + payload + '.' + signature;
 }
+
+/**
+ * Run this function in the editor to trigger the authorization prompt
+ * for the new 'datastore' scope.
+ */
+function testFirestoreScopes() {
+  console.log('Testing Firestore scopes...');
+  try {
+    const projectId = getFirebaseProjectId();
+    if (!projectId) throw new Error('No project ID');
+    
+    // Attempt a simple list to trigger scope check
+    const docs = listFirestoreDocuments('authorized_teachers');
+    console.log('Success! Connection verified.');
+    console.log('Found docs:', docs.length);
+  } catch (e) {
+    console.error('Scope Test Failed:', e);
+    throw e;
+  }
+}

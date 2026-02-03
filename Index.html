@@ -2103,6 +2103,7 @@
 
         console.log('[INIT] Removing loading screen...');
         DOM.loadingOverlay.classList.add('hidden');
+        DOM.app.classList.remove('hidden');
         console.log('[INIT] Loading screen removed');
 
       } catch (error) {
@@ -2625,7 +2626,7 @@
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'text-danger hover:text-red-700 px-2';
-        deleteBtn.innerHTML = '🗑️';
+        deleteBtn.innerHTML = 'Del';
         deleteBtn.title = 'Delete Question';
         deleteBtn.onclick = (e) => {
           e.stopPropagation();
@@ -2664,8 +2665,154 @@
       }
     }
 
+    // ============================================
+    // QUIZ EDITOR HELPERS (Modular to prevent syntax errors)
+    // ============================================
+
+    function createQuestionTextSection(q) {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+      group.innerHTML = '<label class="form-label">Question Text</label>';
+
+      const textarea = document.createElement('textarea');
+      textarea.id = 'qtext_' + q.id;
+      textarea.className = 'form-textarea';
+      textarea.rows = 4;
+      textarea.placeholder = 'Enter your question here...';
+      textarea.value = q.text || '';
+      textarea.onchange = () => updateQuestion(q.id);
+
+      group.appendChild(textarea);
+      return group;
+    }
+
+    function createQuestionImageSection(q) {
+      const group = document.createElement('div');
+      group.className = 'form-group mt-20';
+
+      const label = document.createElement('label');
+      label.className = 'form-label';
+      label.textContent = 'Question Image';
+
+      const uploadZone = document.createElement('div');
+      uploadZone.className = 'upload-zone';
+      uploadZone.onclick = () => triggerImageUpload('question', q.id);
+
+      if (q.imageUrl) {
+        uploadZone.innerHTML = ''; // Clear
+        const img = document.createElement('img');
+        img.src = sanitizeURL(q.imageUrl);
+        img.className = 'image-preview';
+        img.id = 'qimg_preview_' + q.id;
+
+        const note = document.createElement('div');
+        note.className = 'mt-2 text-xs text-muted';
+        note.textContent = 'Click to change image';
+
+        uploadZone.appendChild(img);
+        uploadZone.appendChild(note);
+      } else {
+        uploadZone.innerHTML = `
+          <div class="upload-icon">Upload</div>
+          <div class="upload-text">Click to upload question image (optional)</div>
+        `;
+      }
+
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.id = 'qimg_input_' + q.id;
+      fileInput.className = 'hidden';
+      fileInput.accept = 'image/*';
+      fileInput.onchange = function () { uploadQuestionImage(q.id, this); };
+
+      const progressDiv = document.createElement('div');
+      progressDiv.id = 'qimg_progress_' + q.id;
+      progressDiv.className = 'progress-bar hidden mt-10';
+      progressDiv.innerHTML = '<div class="progress-fill" style="width: 0%"></div>';
+
+      group.appendChild(label);
+      group.appendChild(uploadZone);
+      group.appendChild(fileInput);
+      group.appendChild(progressDiv);
+      return group;
+    }
+
+    function createOptionsSection(q) {
+      const group = document.createElement('div');
+      group.className = 'form-group mt-30';
+      group.innerHTML = '<label class="form-label">Answer Options</label>';
+
+      const container = document.createElement('div');
+      container.id = 'options_' + q.id;
+
+      (q.options || []).forEach((opt, optIdx) => {
+        const row = document.createElement('div');
+        row.className = 'option-editor';
+
+        // Use innerHTML for the row content to keep it readable but simple
+        row.innerHTML = `
+          <div class="flex-1">
+             <input type="text" class="form-input" placeholder="Option text" id="opttext_${q.id}_${optIdx}">
+          </div>
+          <label class="correct-checkbox flex items-center gap-2 cursor-pointer" title="Mark as correct answer">
+            <input type="radio" name="correct_${q.id}" ${opt.isCorrect ? 'checked' : ''}>
+            <span class="text-sm font-bold ${opt.isCorrect ? 'text-success' : 'text-muted'}">Correct</span>
+          </label>
+          <button class="btn btn-sm btn-outline" id="optimgbtn_${q.id}_${optIdx}">
+             ${opt.imageUrl ? 'Img' : 'Upld'}
+          </button>
+          <input type="file" id="optimg_${q.id}_${optIdx}" class="hidden" accept="image/*">
+        `;
+
+        // Manually set value for security/escaping
+        row.querySelector('input[type="text"]').value = opt.text || '';
+
+        // Bind events manually to avoid inline JS issues
+        const textIn = row.querySelector('input[type="text"]');
+        textIn.onchange = (e) => updateOption(q.id, optIdx, 'text', e.target.value);
+
+        const radio = row.querySelector('input[type="radio"]');
+        radio.onchange = () => {
+          updateOption(q.id, optIdx, 'isCorrect', true);
+          // Visual update
+          const allSpans = container.querySelectorAll('.correct-checkbox span');
+          allSpans.forEach(el => { el.className = 'text-sm font-bold text-muted'; }); // Reset all
+          radio.nextElementSibling.className = 'text-sm font-bold text-success'; // Set active
+        };
+
+        const imgBtn = row.querySelector('button');
+        imgBtn.onclick = () => triggerOptionImageUpload(q.id, optIdx);
+
+        const fileIn = row.querySelector('input[type="file"]');
+        fileIn.onchange = function () { uploadOptionImage(q.id, optIdx, this); };
+
+        container.appendChild(row);
+      });
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn btn-sm btn-outline mt-10 w-full';
+      addBtn.textContent = '+ Add Another Option';
+      addBtn.onclick = () => addOption(q.id);
+
+      group.appendChild(container);
+      group.appendChild(addBtn);
+      return group;
+    }
+
     function renderQuestionEditor(q) {
-      console.log('Stubbed: renderQuestionEditor');
+      const container = document.getElementById('activeQuestionEditor');
+      container.innerHTML = '';
+
+      if (!q) return;
+
+      const editor = document.createElement('div');
+      editor.className = 'question-card';
+
+      editor.appendChild(createQuestionTextSection(q));
+      editor.appendChild(createQuestionImageSection(q));
+      editor.appendChild(createOptionsSection(q));
+
+      container.appendChild(editor);
     }
 
     function closeQuizEditor() {
