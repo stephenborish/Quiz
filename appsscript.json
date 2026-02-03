@@ -12,7 +12,7 @@
     "https://www.googleapis.com/auth/cloud-platform"
   ],
   "webapp": {
-    "executeAs": "USER_DEPLOYING",
+    "executeAs": "USER_ACCESSING",
     "access": "ANYONE"
   }
 }

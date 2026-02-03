@@ -15,8 +15,8 @@
  *    - FIREBASE_API_KEY: Firebase Web API Key (for REST calls)
  *
  * Deployment:
- * - Execute as: Me (the developer)
- * - Who has access: Anyone in organization (or Anyone)
+ * - Execute as: Anyone (the accessing user)
+ * - Who has access: Anyone
  *
  * @version 2.0.0
  */
@@ -32,7 +32,7 @@ const APP_CONFIG = {
   title: 'Secure Assessment Platform',
   version: '2.0.0',
   organization: 'Malvern Prep',
-  appUrl: 'https://script.google.com/macros/s/AKfycbxQlfAJyBNknabLSYZP4bzyjUFfqdwqWMSt3K42wU-J/dev'
+  appUrl: 'https://script.google.com/macros/s/AKfycbxQlfAJyBNknabLSYZP4bzyjUFfqdwqWMSt3K42wU-J/exec'
 };
 
 /**
