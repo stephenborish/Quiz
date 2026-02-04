@@ -2166,12 +2166,12 @@
 
 
     // ============================================
-    // SERVER-INJECTED DATA BUNDLE (Direct Injection Strategy V35)
+    // SERVER-INJECTED DATA BUNDLE (Direct Injection Strategy V39)
     // ============================================
-    console.log('[BOOT] V35 Scope Fix Loaded');
+    console.log('[BOOT] V39 STABILITY FIX Loaded');
 
-    // We use JSON.stringify in the template to ensure valid JS syntax (automatic quotes)
-    var RAW_BUNDLE = <?!= JSON.stringify(injectedData) ?>;
+    // We inject the Base64 string directly into a JS variable (Standard Injection)
+    var RAW_BUNDLE = '<?!= injectedData ?>';
 
     // Declare globals
     var BUNDLE = {};
