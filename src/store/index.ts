@@ -1,4 +1,5 @@
 import { reactive, computed } from 'vue';
+import { initialAppState } from '../firebase/config';
 
 export interface AppState {
     user: {
@@ -12,7 +13,7 @@ export interface AppState {
     isLoading: boolean;
 }
 
-const state = reactive<AppState>({
+const defaultState: AppState = {
     user: {
         email: null,
         role: null,
@@ -22,7 +23,17 @@ const state = reactive<AppState>({
     quizzes: [],
     courses: [],
     isLoading: false,
-});
+};
+
+// Hydrate from GAS if available
+if (initialAppState) {
+    defaultState.user.email = initialAppState.userEmail;
+    defaultState.user.role = initialAppState.isTeacher ? 'TEACHER' : 'STUDENT';
+    // If we have an email from GAS, we are authenticated
+    defaultState.user.isAuthenticated = !!initialAppState.userEmail;
+}
+
+const state = reactive<AppState>(defaultState);
 
 export const useStore = () => {
     return {
