@@ -1,0 +1,4851 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Secure Assessment Platform - Real-time exam proctoring and analytics">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; font-src * data:;">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Assessment Platform</title>
+
+  <!-- ============================================
+       EMBEDDED CSS STYLES
+       ============================================ -->
+  <style>
+    /* ==========================================
+       CSS VARIABLES & RESET
+       ========================================== */
+    :root {
+      color-scheme: light;
+
+      /* Professional Color Palette - Light Theme */
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --primary-dark: #3730a3;
+
+      --secondary: #6366f1;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --info: #3b82f6;
+      --info-light: #dbeafe;
+
+      /* Clean Light Backgrounds */
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-secondary: #f1f5f9;
+      --bg-accent: #f8fafc;
+
+      /* Professional Typography */
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+
+      /* Borders & Dividers */
+      --border-light: #e2e8f0;
+      --border-medium: #cbd5e1;
+
+      /* Refined Corners */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+
+      /* Professional Shadows */
+      --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+      /* Smooth Transitions */
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+      --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Elegant Global Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 10px;
+      transition: background 0.3s;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: auto;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-main);
+      background-image:
+        radial-gradient(at 0% 0%, hsla(245, 75%, 65%, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, hsla(235, 65%, 60%, 0.1) 0px, transparent 50%);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      background-attachment: fixed;
+    }
+
+    /* ==========================================
+       LAYOUT STRUCTURE
+       ========================================== */
+    .app-container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-light);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .header-logo {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-version {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-secondary);
+      padding: 4px 12px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .user-email {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .user-badge {
+      padding: 6px 14px;
+      border-radius: var(--radius-md);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .user-badge.teacher {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border: 1px solid var(--primary);
+    }
+
+    .user-badge.student {
+      background: var(--success-light);
+      color: #065f46;
+      border: 1px solid var(--success);
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--border-medium);
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-base);
+    }
+
+    .btn-logout:hover {
+      background: var(--danger-light);
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .main-content {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==========================================
+       TAB NAVIGATION (Teacher)
+       ========================================== */
+    .tab-nav {
+      display: flex;
+      background: var(--bg-card);
+      padding: 4px;
+      border-bottom: 1px solid var(--border-light);
+      overflow-x: auto;
+      flex-shrink: 0;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-base);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: var(--radius-md);
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      background: var(--primary-light);
+      font-weight: 700;
+    }
+
+    .tab-icon {
+      font-size: 16px;
+    }
+
+    .tab-content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 100%;
+      /* Ensure full height */
+    }
+
+    .tab-panel {
+      display: none;
+      height: 100%;
+      overflow-y: auto;
+      /* Scroll within panel */
+      padding: 20px;
+      padding-bottom: 80px;
+      /* Space for bottom elements */
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* ==========================================
+       CARDS & CONTAINERS
+       ========================================== */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition-base);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* ==========================================
+       BUTTONS
+       ========================================== */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-success:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+      background: #059669;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+      background: #dc2626;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-secondary);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12px;
+    }
+
+    .btn-lg {
+      padding: 15px 35px;
+      font-size: 16px;
+    }
+
+    /* ==========================================
+       FORMS
+       ========================================== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: var(--transition-base);
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-input::placeholder {
+      color: var(--gray);
+    }
+
+    /* ==========================================
+       TABLES
+       ========================================== */
+    .table-container {
+      overflow-x: auto;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--gray-light);
+      background: #ffffff;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th {
+      background: hsla(210, 20%, 90%, 0.03);
+      padding: 16px 20px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .data-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    .data-table tr:hover {
+      background: #f1f5f9;
+    }
+
+    /* ==========================================
+       STATUS BADGES
+       ========================================== */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .status-badge.active {
+      background: var(--success-light);
+      color: #065f46;
+      border: 1px solid var(--success);
+    }
+
+    .status-badge.blocked {
+      background: var(--danger-light);
+      color: #991b1b;
+      border: 1px solid var(--danger);
+    }
+
+    .status-badge.completed {
+      background: var(--info-light);
+      color: #1e40af;
+      border: 1px solid var(--info);
+    }
+
+    .status-badge.draft {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-medium);
+    }
+
+    .status-badge.open {
+      background: var(--success-light);
+      color: #065f46;
+      border: 1px solid var(--success);
+    }
+
+    .status-badge.closed {
+      background: var(--danger-light);
+      color: #991b1b;
+      border: 1px solid var(--danger);
+    }
+
+    /* ==========================================
+       UPLOAD & PROGRESS
+       ========================================== */
+    .upload-zone {
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      border-radius: var(--border-radius);
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .upload-zone:hover {
+      border-color: var(--primary);
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .upload-zone.dragover {
+      border-color: var(--success);
+      background: rgba(72, 187, 120, 0.1);
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+      opacity: 0.5;
+    }
+
+    .upload-text {
+      color: var(--gray);
+      font-size: 14px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .image-preview {
+      max-width: 200px;
+      max-height: 150px;
+      border-radius: var(--border-radius);
+      margin-top: 10px;
+    }
+
+    /* ==========================================
+       THE MATRIX (Analytics Grid)
+       ========================================== */
+    .matrix-container {
+      display: flex;
+      gap: 20px;
+      height: calc(100% - 60px);
+    }
+
+    .matrix-grid {
+      flex: 1;
+      position: relative;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: var(--border-radius);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      min-height: 400px;
+    }
+
+    .matrix-quadrant {
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px;
+    }
+
+    .matrix-quadrant.top-left {
+      top: 0;
+      left: 0;
+      background: rgba(237, 137, 54, 0.1);
+    }
+
+    .matrix-quadrant.top-right {
+      top: 0;
+      right: 0;
+      background: rgba(72, 187, 120, 0.1);
+    }
+
+    .matrix-quadrant.bottom-left {
+      bottom: 0;
+      left: 0;
+      background: rgba(245, 101, 101, 0.1);
+    }
+
+    .matrix-quadrant.bottom-right {
+      bottom: 0;
+      right: 0;
+      background: rgba(66, 153, 225, 0.1);
+    }
+
+    .quadrant-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.6;
+      margin-bottom: 10px;
+    }
+
+    .quadrant-dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+    }
+
+    .student-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .student-dot:hover {
+      transform: scale(1.5);
+      z-index: 10;
+    }
+
+    .student-dot.misconception {
+      background: var(--danger);
+      animation: pulse-danger 1.5s infinite;
+    }
+
+    .student-dot.correct-confident {
+      background: var(--success);
+    }
+
+    .student-dot.correct-unsure {
+      background: var(--info);
+    }
+
+    .student-dot.incorrect-unsure {
+      background: var(--warning);
+    }
+
+    @keyframes pulse-danger {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7);
+      }
+
+      50% {
+        box-shadow: 0 0 0 8px rgba(245, 101, 101, 0);
+      }
+    }
+
+    .matrix-legend {
+      width: 250px;
+      padding: 15px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: var(--border-radius);
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .legend-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-text {
+      font-size: 12px;
+    }
+
+    .axis-label {
+      position: absolute;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+    }
+
+    .axis-label.x-axis {
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .axis-label.y-axis {
+      left: -40px;
+      top: 50%;
+      transform: rotate(-90deg) translateX(-50%);
+      transform-origin: left center;
+    }
+
+    /* Proctoring Dashboard - Student Tiles System */
+    .proctoring-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .student-tile {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: var(--transition-base);
+      position: relative;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .student-tile::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--border-light);
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    }
+
+    .student-tile.active::before {
+      background: var(--success);
+    }
+
+    .student-tile.blocked::before {
+      background: var(--danger);
+    }
+
+    .student-tile:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-medium);
+    }
+
+    .tile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .tile-student-info h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 4px 0;
+    }
+
+    .tile-student-info p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin: 0;
+    }
+
+    .tile-status-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      background: var(--bg-secondary);
+    }
+
+    /* ==========================================
+       STUDENT EXAM VIEW
+       ========================================== */
+    .screen {
+      display: none;
+      height: 100%;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .waiting-room {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .waiting-icon {
+      font-size: 80px;
+      margin-bottom: 25px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-15px);
+      }
+    }
+
+    .waiting-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .waiting-subtitle {
+      font-size: 16px;
+      color: var(--gray);
+      max-width: 450px;
+    }
+
+    .waiting-status {
+      margin-top: 30px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 30px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+    }
+
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--warning);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
+    }
+
+    /* Blocked Screen */
+    .blocked-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .blocked-icon {
+      font-size: 100px;
+      margin-bottom: 30px;
+    }
+
+    .blocked-title {
+      font-size: 48px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      margin-bottom: 20px;
+      color: white;
+    }
+
+    .blocked-message {
+      font-size: 18px;
+      opacity: 0.9;
+      max-width: 500px;
+    }
+
+    /* Exam Content */
+    .exam-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 30px 20px;
+      width: 100%;
+    }
+
+    .question-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .question-number {
+      font-size: 13px;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .quiz-badge {
+      background: var(--primary);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .question-text {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .question-image {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: var(--border-radius);
+      margin-bottom: 25px;
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-btn {
+      background: var(--bg-card);
+      border: 2px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 18px 24px;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: var(--transition-base);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .option-btn:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .option-btn.selected {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .option-letter {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      transition: var(--transition-base);
+    }
+
+    .option-btn.selected .option-letter {
+      background: var(--primary);
+      color: white;
+    }
+
+    .option-content {
+      flex: 1;
+    }
+
+    .option-image {
+      max-width: 150px;
+      max-height: 100px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    /* Metacognition Modal */
+    .metacognition-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9000;
+      padding: 20px;
+    }
+
+    .metacognition-content {
+      background: #ffffff;
+      border-radius: var(--border-radius-lg);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      border: 1px solid var(--gray-light);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15);
+    }
+
+    .metacognition-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .metacognition-subtitle {
+      font-size: 14px;
+      color: var(--gray);
+      margin-bottom: 30px;
+    }
+
+    .confidence-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .confidence-btn {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: var(--border-radius);
+      padding: 20px 15px;
+      color: var(--gray-dark);
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    .confidence-btn:hover {
+      border-color: var(--primary);
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .confidence-btn.selected {
+      border-color: var(--primary);
+      background: rgba(102, 126, 234, 0.2);
+    }
+
+    .confidence-level {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    .confidence-label {
+      font-size: 13px;
+      color: var(--gray);
+    }
+
+    .metacognition-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+
+    .loading-overlay.error .spinner {
+      display: none;
+    }
+
+    .loading-actions {
+      display: none;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .loading-overlay.error .loading-actions {
+      display: flex;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      margin-top: 20px;
+      font-size: 16px;
+      color: var(--gray);
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .toast {
+      background: rgba(30, 30, 50, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: var(--border-radius);
+      padding: 15px 20px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 300px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      animation: slideIn 0.3s ease;
+      color: #fff;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .toast.warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    /* ==========================================
+       QUIZ BUILDER SPLIT VIEW
+       ========================================== */
+    .split-view {
+      display: flex;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .editor-sidebar {
+      width: 300px;
+      border-right: 1px solid var(--gray-light);
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 15px;
+      border-bottom: 1px solid var(--gray-light);
+      background: #f8fafc;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .editor-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+
+    .editor-toolbar {
+      padding: 15px 25px;
+      background: #fff;
+      border-bottom: 1px solid var(--gray-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .editor-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 30px;
+    }
+
+    .question-list-item {
+      padding: 16px 20px;
+      border-radius: 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: var(--transition);
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .question-list-item:hover {
+      background: #f1f5f9;
+      color: var(--text-main);
+      transform: translateX(4px);
+    }
+
+    .question-list-item.active {
+      background: #ffffff;
+      color: var(--primary);
+      border-color: var(--border-color);
+      box-shadow: var(--shadow);
+      font-weight: 700;
+    }
+
+    .question-card {
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 10px 40px -10px rgba(15, 23, 42, 0.08);
+      padding: 48px;
+      max-width: 900px;
+      margin: 20px auto 60px;
+      border: 1px solid rgba(15, 23, 42, 0.05);
+    }
+
+    /* Option Editor Styling */
+    .option-editor {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 18px;
+      background: #f8fafc;
+      border-radius: var(--border-radius);
+      border: 1px solid #e2e8f0;
+      transition: var(--transition);
+    }
+
+    .option-editor:focus-within {
+      background: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .quiz-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 32px;
+      padding: 40px;
+      background: #f8fafc;
+    }
+
+
+    .quiz-card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .quiz-card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+    }
+
+    .question-count {
+      font-size: 13px;
+      color: var(--gray);
+    }
+
+    .question-editor {
+      background: #f8fafc;
+      border-radius: var(--border-radius);
+      padding: 25px;
+      margin-bottom: 25px;
+      border: 1px solid var(--gray-light);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .option-editor {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 18px;
+      background: #ffffff;
+      border-radius: var(--border-radius);
+      border: 1px solid #e2e8f0;
+      transition: var(--transition);
+    }
+
+    .option-editor:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    #questionsList {
+      max-height: 60vh;
+      overflow-y: scroll;
+      padding-right: 6px;
+      scrollbar-width: auto;
+      scrollbar-color: #cbd5e0 #edf2f7;
+    }
+
+    #questionsList::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    #questionsList::-webkit-scrollbar-track {
+      background: #edf2f7;
+      border-radius: 10px;
+    }
+
+    #questionsList::-webkit-scrollbar-thumb {
+      background: #cbd5e0;
+      border-radius: 10px;
+      border: 3px solid #edf2f7;
+    }
+
+    #questionsList::-webkit-scrollbar-thumb:hover {
+      background: #a0aec0;
+    }
+
+    .option-editor .form-input {
+      flex: 1;
+    }
+
+    .correct-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .correct-checkbox input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--success);
+    }
+
+    /* ==========================================
+       RESPONSIVE DESIGN
+       ========================================== */
+    @media (max-width: 768px) {
+      .header {
+        padding: 10px 15px;
+      }
+
+      .header-logo {
+        font-size: 18px;
+      }
+
+      .header-version {
+        display: none;
+      }
+
+      .tab-btn {
+        padding: 12px 15px;
+        font-size: 13px;
+      }
+
+      .tab-btn span:not(.tab-icon) {
+        display: none;
+      }
+
+      .matrix-container {
+        flex-direction: column;
+      }
+
+      .matrix-legend {
+        width: 100%;
+      }
+
+      .question-text {
+        font-size: 18px;
+      }
+
+      .confidence-options {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ==========================================
+       UTILITY CLASSES
+       ========================================== */
+    .hidden {
+      display: none !important;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-success {
+      color: var(--success);
+    }
+
+    .text-danger {
+      color: var(--danger);
+    }
+
+    .text-warning {
+      color: var(--warning);
+    }
+
+    .text-muted {
+      color: var(--gray);
+    }
+
+    .mt-10 {
+      margin-top: 10px;
+    }
+
+    .mt-20 {
+      margin-top: 20px;
+    }
+
+    #adminPanel {
+      overflow-y: auto;
+      height: calc(100vh - 120px);
+      padding-bottom: 80px;
+    }
+
+    .mb-10 {
+      margin-bottom: 10px;
+    }
+
+    .mb-20 {
+      margin-bottom: 20px;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .flex-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gap-10 {
+      gap: 10px;
+    }
+
+    .gap-20 {
+      gap: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Debug script - runs first to verify JS execution -->
+  <script>
+    console.log('[BOOT] A: Bootstrap started');
+    window.BOOT_LOG = function (msg) {
+      console.log('[BOOT] ' + msg);
+      window.BOOT_ERROR_LOG = window.BOOT_ERROR_LOG || [];
+    };
+    window.onerror = function (msg, url, line) {
+      console.error('[BOOT_ERR] ' + msg + ' at ' + line);
+      return false;
+    };
+  </script>
+  <script>window.BOOT_LOG('B: Pre-Storage Div');</script>
+  <div id="SERVER_BUNDLE_STORAGE" style="display:none; visibility:hidden;">
+    <?!= injectedData ?>
+  </div>
+  <script>window.BOOT_LOG('C: Post-Storage Div');</script>
+
+  <!-- ============================================
+       LOADING OVERLAY
+       ============================================ -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Initializing Secure Assessment Platform...</div>
+    <div class="loading-actions">
+      <button class="btn btn-outline" onclick="location.reload()">Retry</button>
+      <a id="openAppLink" class="btn btn-outline" target="_blank" rel="noopener">Open in new tab</a>
+    </div>
+  </div>
+
+  <!-- ============================================
+       BLOCKED SCREEN (Students Only)
+       ============================================ -->
+  <div id="blockedScreen" class="blocked-screen hidden">
+    <div class="blocked-icon">🚫</div>
+    <h1 class="blocked-title">Session Locked</h1>
+    <p class="blocked-message">
+      A tab switch or window change was detected.<br><br>
+      Please see your teacher to continue.
+    </p>
+  </div>
+
+  <!-- ============================================
+       MAIN APPLICATION
+       ============================================ -->
+  <div id="app" class="app-container hidden">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="header-logo">Secure Assessment</h1>
+        <span class="header-version">v<span id="headerAppVersion">...</span></span>
+      </div>
+      <div class="header-user">
+        <span class="user-email" id="headerUserEmail">...</span>
+        <span id="userBadge" class="user-badge">...</span>
+        <button id="logoutBtn" class="btn-logout" onclick="logout()" title="Sign out">
+          🚪 Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- ==========================================
+           TEACHER COMMAND CENTER
+           ========================================== -->
+      <div id="teacherView" class="hidden">
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+          <button class="tab-btn active" data-tab="proctoring">
+            <span class="tab-icon">👁️</span>
+            <span>Live Proctoring</span>
+          </button>
+          <button class="tab-btn" data-tab="builder">
+            <span class="tab-icon">📝</span>
+            <span>Quiz Builder</span>
+          </button>
+          <button class="tab-btn" data-tab="matrix">
+            <span class="tab-icon">📊</span>
+            <span>The Matrix</span>
+          </button>
+          <button class="tab-btn" data-tab="admin">
+            <span class="tab-icon">⚙️</span>
+            <span>Admin Panel</span>
+          </button>
+        </nav>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <!-- Live Proctoring Panel -->
+          <div id="proctoringPanel" class="tab-panel active bg-slate-50/30">
+            <div
+              class="px-40 py-24 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-20 shadow-sm shadow-slate-200/10">
+              <div class="flex items-center gap-16">
+                <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-xl shadow-inner">⚡
+                </div>
+                <div>
+                  <h2 class="text-xl font-black text-slate-900 tracking-tight leading-none m-0 uppercase">Live Proctor
+                  </h2>
+                  <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-6">Real-time assessment
+                    governance</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-12 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <select id="activeQuizSelect"
+                  class="bg-white border-slate-200 rounded-xl px-16 py-10 text-xs font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                  style="width: 240px;">
+                  <option value="">Sync Assessment Module...</option>
+                </select>
+
+                <div class="h-6 w-px bg-slate-200 mx-4"></div>
+
+                <button id="openQuizBtn"
+                  class="bg-emerald-500 hover:bg-emerald-600 text-white px-20 py-10 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-100 transition-all transform active:scale-95"
+                  onclick="toggleQuizStatus('OPEN')">
+                  Authorize Entry
+                </button>
+                <button id="closeQuizBtn"
+                  class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-danger px-20 py-10 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all"
+                  onclick="toggleQuizStatus('CLOSED')">
+                  Terminate Session
+                </button>
+                <button id="sendInvitesBtn"
+                  class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-20 py-10 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-40"
+                  onclick="sendInvitesForActiveQuiz()" disabled>
+                  Broadcast Invites
+                </button>
+              </div>
+            </div>
+            <div id="quizStatusBanner" class="hidden"
+              style="padding: 15px; border-radius: 8px; text-align: center; font-weight: 600;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Live Student Roster</h2>
+              <span id="studentCount" class="status-badge active">0 Students</span>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Student Email</th>
+                    <th>Connection</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Violations</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="rosterBody">
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">No students connected</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quiz Builder Panel -->
+        <div id="builderPanel" class="tab-panel flex flex-col h-full bg-white">
+          <div
+            class="px-40 py-32 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-20">
+            <div>
+              <h2 class="text-2xl font-black text-slate-900 tracking-tight m-0 uppercase flex items-center gap-3">
+                <span class="w-2 h-8 bg-indigo-500 rounded-full"></span> Curriculum Assets
+              </h2>
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-6">Design and manage
+                academic assessments</p>
+            </div>
+            <button
+              class="btn btn-primary px-24 py-14 rounded-2xl font-black shadow-lg shadow-indigo-100 hover:shadow-indigo-200 transform active:scale-95 transition-all text-xs uppercase tracking-widest flex items-center gap-2"
+              onclick="showCreateQuizModal()">
+              <span class="text-lg leading-none">+</span> Initialize New Assessment
+            </button>
+          </div>
+
+          <div id="quizList" class="quiz-list flex-1">
+            <!-- Populated by JavaScript -->
+          </div>
+
+          <!-- Question Editor (Hidden by default) -->
+          <!-- Split View Editor (Hidden by default) -->
+          <div id="quizEditorView" class="hidden"
+            style="height: 100%; display: none; flex-direction: column; background: #f8fafc;">
+            <header
+              class="bg-white border-b border-slate-100 px-32 py-16 flex items-center justify-between sticky top-0 z-30 shadow-sm shadow-slate-200/10">
+              <div class="flex items-center gap-16">
+                <button
+                  class="w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all group"
+                  onclick="closeQuizEditor()">
+                  <span class="group-hover:-translate-x-1 transition-transform">←</span>
+                </button>
+                <div>
+                  <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 font-mono">
+                    Curriculum Module</div>
+                  <h2 id="editingQuizTitle"
+                    class="text-lg font-black text-slate-900 tracking-tight leading-none m-0 uppercase">Quiz Title
+                  </h2>
+                </div>
+              </div>
+              <div class="flex items-center gap-12">
+                <div id="saveStatus"
+                  class="flex items-center gap-2 px-12 py-6 bg-slate-50 border border-slate-100 rounded-lg transition-all">
+                  <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Changes Synced</span>
+                </div>
+              </div>
+            </header>
+
+            <div class="split-view flex-1 overflow-hidden" style="display: flex;">
+              <!-- Sidebar: Question List -->
+              <aside class="editor-sidebar w-[320px] bg-white border-r border-slate-100 flex flex-col">
+                <div class="p-20 border-b border-slate-100">
+                  <div class="flex items-center justify-between mb-16">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Questions</h3>
+                    <div class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-8 py-2 rounded-lg"
+                      id="questionsSidebarCount">0 TOTAL</div>
+                  </div>
+                  <button
+                    class="btn btn-primary w-full py-12 rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    onclick="addNewQuestion()">
+                    <span class="text-xl leading-none font-light">+</span> <span
+                      class="font-black text-xs uppercase tracking-widest">Add Element</span>
+                  </button>
+                </div>
+                <div id="questionsSidebarList" class="flex-1 overflow-y-auto p-12 space-y-1">
+                  <!-- Populated by JS -->
+                </div>
+              </aside>
+
+              <!-- Main: Editor -->
+              <main class="editor-main flex-1 bg-slate-50/50 overflow-y-auto p-40">
+                <div id="questionEditorArea" class="max-w-[1000px] mx-auto min-h-full flex flex-col">
+                  <div id="emptyEditorState" class="flex-1 flex flex-col items-center justify-center text-slate-300">
+                    <div
+                      class="w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-[32px] flex items-center justify-center text-4xl mb-24 grayscale opacity-40">
+                      👈</div>
+                    <h3 class="text-xl font-bold text-slate-400">Empty Canvas</h3>
+                    <p class="text-sm font-medium">Select a question to begin defining its logic.</p>
+                  </div>
+
+                  <div id="activeQuestionEditor" class="hidden flex-1">
+                    <!-- Dynamic Form Injected Here -->
+                  </div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </div>
+
+        <!-- The Matrix (Analytics) Panel -->
+        <div id="matrixPanel" class="tab-panel">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">The Metacognition Matrix</h2>
+              <select id="matrixQuizSelect" class="form-select" style="width: 200px;">
+                <option value="">Select Quiz...</option>
+              </select>
+            </div>
+
+            <div class="matrix-container">
+              <div class="matrix-grid">
+                <span class="axis-label y-axis">CONFIDENCE</span>
+                <span class="axis-label x-axis">ACCURACY</span>
+
+                <!-- Top Left: High Confidence / Incorrect = MISCONCEPTION -->
+                <div class="matrix-quadrant top-left">
+                  <div class="quadrant-label" style="color: var(--danger);">Active Misconception</div>
+                  <div id="quadrantTL" class="quadrant-dots"></div>
+                </div>
+
+                <!-- Top Right: High Confidence / Correct = MASTERY -->
+                <div class="matrix-quadrant top-right">
+                  <div class="quadrant-label" style="color: var(--success);">Mastery</div>
+                  <div id="quadrantTR" class="quadrant-dots"></div>
+                </div>
+
+                <!-- Bottom Left: Low Confidence / Incorrect = LEARNING -->
+                <div class="matrix-quadrant bottom-left">
+                  <div class="quadrant-label" style="color: var(--warning);">Learning</div>
+                  <div id="quadrantBL" class="quadrant-dots"></div>
+                </div>
+
+                <!-- Bottom Right: Low Confidence / Correct = LUCKY GUESS -->
+                <div class="matrix-quadrant bottom-right">
+                  <div class="quadrant-label" style="color: var(--info);">Lucky Guess</div>
+                  <div id="quadrantBR" class="quadrant-dots"></div>
+                </div>
+              </div>
+
+              <div class="matrix-legend">
+                <h3 style="font-size: 14px; margin-bottom: 15px; color: var(--gray);">LEGEND</h3>
+
+                <div class="legend-item" style="background: rgba(245, 101, 101, 0.2);">
+                  <div class="legend-dot" style="background: var(--danger);"></div>
+                  <div class="legend-text">
+                    <strong style="color: var(--danger);">Active Misconception</strong><br>
+                    <span class="text-muted">High confidence + Wrong</span>
+                  </div>
+                </div>
+
+                <div class="legend-item" style="background: rgba(72, 187, 120, 0.2);">
+                  <div class="legend-dot" style="background: var(--success);"></div>
+                  <div class="legend-text">
+                    <strong style="color: var(--success);">Mastery</strong><br>
+                    <span class="text-muted">High confidence + Correct</span>
+                  </div>
+                </div>
+
+                <div class="legend-item" style="background: rgba(237, 137, 54, 0.2);">
+                  <div class="legend-dot" style="background: var(--warning);"></div>
+                  <div class="legend-text">
+                    <strong style="color: var(--warning);">Learning</strong><br>
+                    <span class="text-muted">Low confidence + Wrong</span>
+                  </div>
+                </div>
+
+                <div class="legend-item" style="background: rgba(66, 153, 225, 0.2);">
+                  <div class="legend-dot" style="background: var(--info);"></div>
+                  <div class="legend-text">
+                    <strong style="color: var(--info);">Lucky Guess</strong><br>
+                    <span class="text-muted">Low confidence + Correct</span>
+                  </div>
+                </div>
+
+                <div class="mt-20">
+                  <div id="matrixStats" class="text-muted" style="font-size: 13px;">
+                    Select a quiz to view analytics
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Panel (Redesigned) -->
+        <div id="adminPanel" class="tab-panel" style="height: calc(100vh - 80px); padding: 0; overflow: hidden;">
+          <div class="split-view">
+            <!-- Sidebar -->
+            <div class="editor-sidebar">
+              <div class="sidebar-header border-b border-slate-100 p-20">
+                <h3 class="font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] mb-12">Administration</h3>
+                <button
+                  class="btn btn-primary w-full py-12 rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  onclick="renderCreateCourseView()">
+                  <span class="text-xl leading-none font-light">+</span> <span class="font-bold text-sm">New
+                    Course</span>
+                </button>
+              </div>
+              <div class="sidebar-content p-12">
+                <div class="mb-24">
+                  <div
+                    class="px-16 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-200"></span> Courses
+                  </div>
+                  <div id="adminCourseList" class="space-y-1">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+                <div>
+                  <div
+                    class="px-16 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-200"></span> System
+                  </div>
+                  <div class="space-y-1">
+                    <div
+                      class="question-list-item group flex items-center gap-4 px-16 py-12 rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all cursor-pointer"
+                      onclick="renderAuthorizedTeachersView()">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                        🛡️</div>
+                      <span
+                        class="text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition-colors">Governance</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="editor-main">
+              <div id="adminMainContent" class="h-full flex flex-col relative">
+                <div class="flex items-center justify-center h-full text-muted">
+                  Select a course to manage
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+
+  <!-- ==========================================
+           STUDENT EXAM VIEW
+           ========================================== -->
+  <div id="studentView" class="hidden" style="height: 100%;">
+    <!-- Waiting Room -->
+    <div id="waitingScreen" class="screen active">
+      <div class="waiting-room">
+        <div class="waiting-icon">⏳</div>
+        <h1 class="waiting-title">Waiting Room</h1>
+        <p class="waiting-subtitle">
+          Your teacher is preparing the assessment. Please wait here and keep this tab focused.
+        </p>
+        <div class="waiting-status">
+          <div class="pulse-dot"></div>
+          <span>Waiting for quiz to open...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exam Screen -->
+    <div id="examScreen" class="screen">
+      <div class="exam-container">
+        <div class="question-card">
+          <div class="question-header">
+            <span id="questionCounter" class="question-number">Question 1 of 1</span>
+            <span id="quizBadge" class="quiz-badge">Quiz</span>
+          </div>
+
+          <h2 id="questionText" class="question-text">Loading question...</h2>
+          <img id="questionImage" class="question-image hidden" src="" alt="Question image">
+
+          <div id="optionsList" class="options-list">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completed Screen -->
+    <div id="completedScreen" class="screen">
+      <div class="waiting-room">
+        <div class="waiting-icon">✅</div>
+        <h1 class="waiting-title" style="color: var(--success);">Assessment Complete!</h1>
+        <p class="waiting-subtitle">
+          Your responses have been recorded. Please wait for your teacher's instructions.
+        </p>
+        <div id="completionSummary" class="mt-20"
+          style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px;">
+          <!-- Summary populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+  </main>
+  </div>
+
+  <!-- ============================================
+       METACOGNITION MODAL
+       ============================================ -->
+  <div id="metacognitionModal" class="metacognition-modal hidden">
+    <div class="metacognition-content">
+      <h2 class="metacognition-title">How confident are you?</h2>
+      <p class="metacognition-subtitle">
+        Your answer: <strong id="selectedAnswerPreview">...</strong>
+      </p>
+
+      <div class="confidence-options">
+        <button class="confidence-btn" data-confidence="1" onclick="selectConfidence(1)">
+          <div class="confidence-level">1</div>
+          <div class="confidence-label">Guessed</div>
+        </button>
+        <button class="confidence-btn" data-confidence="2" onclick="selectConfidence(2)">
+          <div class="confidence-level">2</div>
+          <div class="confidence-label">Unsure</div>
+        </button>
+        <button class="confidence-btn" data-confidence="3" onclick="selectConfidence(3)">
+          <div class="confidence-level">3</div>
+          <div class="confidence-label">Confident</div>
+        </button>
+        <button class="confidence-btn" data-confidence="4" onclick="selectConfidence(4)">
+          <div class="confidence-level">4</div>
+          <div class="confidence-label">Certain</div>
+        </button>
+      </div>
+
+      <div class="metacognition-actions">
+        <button class="btn btn-outline" onclick="cancelMetacognition()">Change Answer</button>
+        <button id="submitWithConfidenceBtn" class="btn btn-success" onclick="submitWithConfidence()" disabled>
+          Submit Answer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       CREATE QUIZ MODAL
+       ============================================ -->
+  <div id="createQuizModal"
+    class="metacognition-modal hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-24">
+    <div
+      class="bg-white rounded-[40px] shadow-2xl w-full max-w-[520px] overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div class="p-40">
+        <div class="mb-32">
+          <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-xl mb-20">📝</div>
+          <h2 class="text-3xl font-black text-slate-900 tracking-tight uppercase leading-none">New Assessment</h2>
+          <p class="text-xs font-bold text-slate-400 mt-10 uppercase tracking-widest">Define your curriculum parameters
+          </p>
+        </div>
+
+        <div class="space-y-24">
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10 block">Assessment
+              Designation</label>
+            <input type="text" id="newQuizTitle"
+              class="w-full p-16 bg-slate-50 border-none rounded-2xl focus:ring-8 focus:ring-indigo-500/5 focus:bg-white transition-all font-bold text-slate-900"
+              placeholder="e.g., Unit 4 Mastery Exam">
+          </div>
+
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10 block">Module
+              Description</label>
+            <textarea id="newQuizDescription"
+              class="w-full p-16 bg-slate-50 border-none rounded-2xl focus:ring-8 focus:ring-indigo-500/5 focus:bg-white transition-all font-medium text-slate-700 h-24 resize-none"
+              placeholder="Context for the assessment..."></textarea>
+          </div>
+
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10 block">Sync Roster
+              Assets</label>
+            <select id="newQuizRosterSelect"
+              class="w-full p-16 bg-slate-50 border-none rounded-2xl focus:ring-8 focus:ring-indigo-500/5 focus:bg-white transition-all font-bold text-slate-900 appearance-none">
+              <option value="">Detached / General Poll</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-40 flex gap-12">
+          <button
+            class="flex-1 py-16 rounded-2xl text-xs font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 transition-all"
+            onclick="closeCreateQuizModal()">Cancel</button>
+          <button
+            class="flex-[2] btn btn-primary py-16 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:shadow-indigo-200 transform active:scale-95 transition-all"
+            onclick="createNewQuiz()">Initialize Module</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ============================================
+       FIREBASE SDK (Compat 9.22.0)
+       ============================================ -->
+  <script>window.BOOT_LOG('D: Loading Firebase App SDK');</script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"
+    onload="window.BOOT_LOG('E: Firebase App SDK Loaded')"></script>
+  <script>window.BOOT_LOG('F: Loading Auth SDK');</script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"
+    onload="window.BOOT_LOG('G: Auth SDK Loaded')"></script>
+  <script>window.BOOT_LOG('H: Loading Firestore SDK');</script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"
+    onload="window.BOOT_LOG('I: Firestore SDK Loaded')"></script>
+  <script>window.BOOT_LOG('J: Loading Storage SDK');</script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"
+    onload="window.BOOT_LOG('K: Storage SDK Loaded')"></script>
+  <script>window.BOOT_LOG('L: Starting Application Logic');</script>
+  <script>window.BOOT_LOG('M: About to enter main script block');</script>
+
+  <!-- ============================================
+       MAIN APPLICATION JAVASCRIPT
+       ============================================ -->
+  <script>
+    window.BOOT_LOG('N: Inside main script tag - first line');
+    console.log('[SCRIPT] FIRST LINE OF MAIN SCRIPT - Execution reached here!');
+    // ============================================
+    // SCRIPT START - Immediate entry logging
+    // ============================================
+    console.log('[SCRIPT] Main script block executing...');
+
+    // Global Error Handler for async/promise rejections that might escape individual blocks
+    window.addEventListener('unhandledrejection', function (event) {
+      console.error('[GLOBAL] Unhandled Promise Rejection:', event.reason);
+    });
+
+    console.log('[SCRIPT] Global scope initialized');
+
+
+    // ============================================
+    // SERVER-INJECTED DATA BUNDLE (Direct Injection Strategy V39)
+    // ============================================
+    console.log('[BOOT] V39 STABILITY FIX Loaded');
+
+    // We inject the Base64 string directly into a JS variable (Standard Injection)
+    var RAW_BUNDLE = '<?!= injectedData ?>';
+
+    // Declare globals
+    var BUNDLE = {};
+    var USER_EMAIL = 'unknown';
+    var IS_TEACHER = false;
+    var USER_ROLE = 'STUDENT';
+    var APP_URL = '';
+    var AUTH_TOKEN = '';
+    var AUTH_TOKEN_ERROR = '';
+    var FIREBASE_CONFIG = null;
+
+    try {
+      // Robust check: ensure it's not empty and not the template tag literals
+      if (RAW_BUNDLE && RAW_BUNDLE.length > 0 && RAW_BUNDLE.indexOf('<?!=') === -1) {
+
+        // Decode Base64 and Parse JSON
+        try {
+          BUNDLE = JSON.parse(atob(RAW_BUNDLE));
+          console.log('[DATA] Bundle decoded. User:', BUNDLE.userEmail);
+        } catch (decodeError) {
+          console.error('[DATA] Decode failed:', decodeError);
+          throw new Error('Data corruption (Base64/JSON invalid)');
+        }
+
+        // Initialize globals from bundle
+        USER_EMAIL = BUNDLE.userEmail || 'unknown';
+        IS_TEACHER = !!BUNDLE.isTeacher;
+        USER_ROLE = BUNDLE.userRole || 'STUDENT';
+        APP_URL = BUNDLE.appUrl || '';
+        AUTH_TOKEN = BUNDLE.authToken || '';
+        AUTH_TOKEN_ERROR = BUNDLE.authTokenError || '';
+        FIREBASE_CONFIG = BUNDLE.firebaseConfig || null;
+
+      } else {
+        console.warn('[DATA] Bundle empty or template tag not replaced. Raw len:', RAW_BUNDLE ? RAW_BUNDLE.length : 0);
+        throw new Error('Data bundle missing or empty');
+      }
+
+    } catch (e) {
+      console.error('[DATA] Critical Bundle Failure:', e);
+      document.getElementById('loadingText').innerHTML = `
+        <div class="text-danger">
+          <p>Initialization Failure: Data Sync Error</p>
+          <p class="text-[10px] opacity-70 font-mono">${e.message}</p>
+        </div>
+      `;
+    }
+
+    // Initialize UI elements that were previously template-driven
+    function initInjectedUI() {
+      try {
+        const appVersion = document.getElementById('headerAppVersion');
+        if (appVersion) appVersion.textContent = BUNDLE.appVersion || '2.0.0';
+
+        const emailEl = document.getElementById('headerUserEmail');
+        if (emailEl) emailEl.textContent = USER_EMAIL;
+
+        const badge = document.getElementById('userBadge');
+        if (badge) {
+          badge.textContent = USER_ROLE;
+          badge.classList.add(IS_TEACHER ? 'teacher' : 'student');
+        }
+
+        if (IS_TEACHER) {
+          const teacherView = document.getElementById('teacherView');
+          if (teacherView) teacherView.classList.remove('hidden');
+        } else {
+          const studentView = document.getElementById('studentView');
+          if (studentView) studentView.classList.remove('hidden');
+        }
+        console.log('[SCRIPT] initInjectedUI completed successfully');
+      } catch (uiError) {
+        console.error('[SCRIPT] initInjectedUI failed:', uiError);
+        // Continue execution - don't let UI init failure stop the app
+      }
+    }
+    initInjectedUI();
+
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    const DEBUG_MODE = false;
+
+    const logger = {
+      log: (...args) => DEBUG_MODE && console.log(...args),
+      warn: (...args) => console.warn(...args),
+      error: (...args) => console.error(...args),
+      info: (...args) => DEBUG_MODE && console.info(...args)
+    };
+
+    logger.log('[SCRIPT] Variables initialized. USER_EMAIL:', USER_EMAIL, 'IS_TEACHER:', IS_TEACHER);
+    logger.log('[SCRIPT] FIREBASE_CONFIG valid:', !!FIREBASE_CONFIG && !!FIREBASE_CONFIG.apiKey);
+
+    // ============================================
+    // INITIALIZE FIREBASE
+    // ============================================
+    // ============================================
+    // INITIALIZE FIREBASE
+    // ============================================
+    // Use VAR for global window attachment
+    var db = null;
+    var storage = null;
+    var firebaseInitError = null;
+
+    try {
+      // Check if Firebase SDK loaded
+      if (typeof firebase === 'undefined') {
+        throw new Error('Firebase SDK not loaded. Check network connectivity.');
+      }
+
+      if (!FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey) {
+        throw new Error('Missing Firebase configuration.');
+      }
+
+      console.log('[FIREBASE] Initializing with project:', FIREBASE_CONFIG.projectId);
+      if (!firebase.apps.length) {
+        firebase.initializeApp(FIREBASE_CONFIG);
+      }
+      db = firebase.firestore();
+      storage = firebase.storage();
+      logger.log('[FIREBASE] Initialized successfully');
+    } catch (error) {
+      logger.error('[FIREBASE] Initialization failed:', error);
+      firebaseInitError = error;
+    }
+
+    // ============================================
+    // APPLICATION STATE
+    // ============================================
+    // Use VAR so it is mutable and globally accessible
+    var AppState = {
+      // Common
+      currentQuizId: null,
+      unsubscribers: [],
+
+      // Teacher
+      quizzes: [],
+      currentEditingQuiz: null,
+      currentQuestions: [],
+      courses: [],
+      selectedCourseId: null,
+      teachers: [],
+
+      // Student
+      isBlocked: false,
+      currentQuestion: null,
+      questions: [],
+      currentQuestionIndex: 0,
+      selectedAnswer: null,
+      selectedConfidence: null,
+      hasSubmitted: false,
+      tabSwitchTimer: null,
+      answers: {},
+      heartbeatIntervalId: null
+    };
+
+    // ============================================
+    // DOM REFERENCES
+    // ============================================
+    const DOM = {
+      loadingOverlay: document.getElementById('loadingOverlay'),
+      blockedScreen: document.getElementById('blockedScreen'),
+      app: document.getElementById('app'),
+      teacherView: document.getElementById('teacherView'),
+      studentView: document.getElementById('studentView'),
+      metacognitionModal: document.getElementById('metacognitionModal'),
+      createQuizModal: document.getElementById('createQuizModal'),
+      toastContainer: document.getElementById('toastContainer')
+    };
+
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+
+    function fisherYatesShuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function docIdFromEmail(email) {
+      return (email || '').trim().toLowerCase();
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function initializeApp() {
+      console.log('[INIT] initializeApp started');
+      try {
+        if (firebaseInitError) {
+          console.error('[INIT] Firebase failed to load:', firebaseInitError);
+          showToast('System Error: Firebase unavailable', 'error');
+          return;
+        }
+
+        // Validate Auth Token
+        if (!AUTH_TOKEN || AUTH_TOKEN === 'null' || AUTH_TOKEN === '') {
+          console.error('[INIT] Invalid Auth Token');
+          if (AUTH_TOKEN_ERROR) console.error('[INIT] Auth Token Error:', AUTH_TOKEN_ERROR);
+          showToast('Authentication Error: Please refresh', 'error');
+          return;
+        }
+
+        console.log('[INIT] Authenticating with Firebase...');
+        await firebase.auth().signInWithCustomToken(AUTH_TOKEN);
+        console.log('[INIT] Firebase Auth successful');
+
+        // Check Teacher Status
+        if (IS_TEACHER) {
+          console.log('[INIT] User verified as TEACHER');
+          await initializeTeacherDashboard();
+        } else {
+          console.log('[INIT] User identified as STUDENT');
+          await initializeStudentView();
+        }
+
+        console.log('[INIT] Removing loading screen...');
+        DOM.loadingOverlay.classList.add('hidden');
+        DOM.app.classList.remove('hidden');
+        console.log('[INIT] Loading screen removed');
+
+      } catch (error) {
+        console.error('[INIT] Critical Initialization Error:', error);
+        showToast('Initialization Failed: ' + error.message, 'error');
+        // Do not hide loading screen on critical error to prevent broken UI usage
+      }
+    }
+
+    /**
+     * Sanitize URL to prevent javascript: protocol and XSS
+     */
+    function sanitizeURL(url) {
+      if (!url) return '';
+      const trimmed = url.trim().toLowerCase();
+      if (trimmed.startsWith('javascript:') ||
+        trimmed.startsWith('data:') ||
+        trimmed.startsWith('vbscript:')) {
+        return '';
+      }
+      return url;
+    }
+
+    /**
+     * Validate email format
+     */
+    function isValidEmail(email) {
+      if (!email) return false;
+      const trimmed = email.trim();
+      // RFC 5322 simplified regex
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(trimmed);
+    }
+
+    /**
+     * Show toast notification (XSS-safe)
+     */
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      const icon = document.createElement('span');
+      icon.style.fontSize = '18px';
+      icon.textContent = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+
+      const text = document.createElement('span');
+      text.textContent = message;
+
+      toast.appendChild(icon);
+      toast.appendChild(text);
+      DOM.toastContainer.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    /**
+     * Show/hide screens
+     */
+    function showScreen(screenId) {
+      const screens = ['waitingScreen', 'examScreen', 'completedScreen'];
+      screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.toggle('active', id === screenId);
+        }
+      });
+    }
+
+    /**
+     * Format timestamp
+     */
+    function formatTime(timestamp) {
+      if (!timestamp) return 'N/A';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleString();
+    }
+
+    /**
+     * Monitor session timeout and warn user
+     * Firebase custom tokens expire after 1 hour
+     */
+    function startSessionTimeoutMonitor() {
+      const sessionDuration = 60 * 60 * 1000; // 1 hour
+      const warningTime = 55 * 60 * 1000; // Warn at 55 minutes
+
+      // Warning before expiration
+      setTimeout(() => {
+        showToast('Your session will expire in 5 minutes. Please save your work.', 'warning');
+
+        // Show another warning at 58 minutes
+        setTimeout(() => {
+          showToast('Your session will expire in 2 minutes. Please save your work now.', 'warning');
+        }, 3 * 60 * 1000);
+
+      }, warningTime);
+
+      // Auto-logout at expiration
+      setTimeout(() => {
+        showToast('Session expired. Reloading...', 'error');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }, sessionDuration);
+    }
+
+    /**
+     * Logout function with proper cleanup
+     */
+    async function logout() {
+      if (!confirm('Are you sure you want to sign out?')) {
+        return;
+      }
+
+      try {
+        // Show loading state
+        DOM.loadingOverlay.classList.remove('hidden');
+
+        // Unsubscribe from all Firestore listeners
+        AppState.unsubscribers.forEach(unsubscribe => {
+          try {
+            unsubscribe();
+          } catch (e) {
+            console.error('[LOGOUT] Failed to unsubscribe:', e);
+          }
+        });
+        AppState.unsubscribers = [];
+
+        // Clear timers
+        if (AppState.tabSwitchTimer) {
+          clearTimeout(AppState.tabSwitchTimer);
+          AppState.tabSwitchTimer = null;
+        }
+
+        // Sign out from Firebase
+        await firebase.auth().signOut();
+
+        // Clear application state
+        Object.keys(AppState).forEach(key => {
+          if (Array.isArray(AppState[key])) {
+            AppState[key] = [];
+          } else if (typeof AppState[key] === 'object' && AppState[key] !== null) {
+            AppState[key] = {};
+          } else {
+            AppState[key] = null;
+          }
+        });
+
+        // Reload the page to return to authentication
+        window.location.reload();
+
+      } catch (error) {
+        console.error('[LOGOUT] Logout failed:', error);
+        showToast('Logout failed. Please try again.', 'error');
+        DOM.loadingOverlay.classList.add('hidden');
+      }
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+
+    function failInitialization(message) {
+      stopInitWatchdog();
+      DOM.loadingOverlay.classList.add('error');
+      const loadingText = document.getElementById('loadingText');
+      if (loadingText) {
+        loadingText.textContent = message || 'Initialization failed. Please try again.';
+      }
+      showToast(message || 'Initialization failed', 'error');
+    }
+
+    function setLoadingStatus(message) {
+      const loadingText = document.getElementById('loadingText');
+      if (loadingText) {
+        loadingText.textContent = message;
+      }
+    }
+
+    let initWatchdog = null;
+
+    function startInitWatchdog(timeoutMs) {
+      if (initWatchdog) {
+        clearTimeout(initWatchdog);
+      }
+      initWatchdog = setTimeout(() => {
+        if (!DOM.loadingOverlay.classList.contains('hidden')) {
+          failInitialization('Initialization is taking longer than expected. Please retry.');
+        }
+      }, timeoutMs);
+    }
+
+
+
+    // ============================================
+    // TEACHER DASHBOARD
+    // ============================================
+
+    async function initializeTeacherDashboard() {
+      console.log('[TEACHER] Initializing dashboard...');
+
+      // Setup tab navigation
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      // Load quizzes
+      await loadQuizzes();
+      await loadCourses();
+
+      // Setup listeners
+      setupTeacherListeners();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === `${tabId}Panel`);
+      });
+
+      if (tabId === 'admin') {
+        renderAdminSidebar();
+      }
+    }
+
+    async function loadQuizzes() {
+      try {
+        const snapshot = await db.collection('quizzes')
+          .where('createdBy', '==', USER_EMAIL)
+          .orderBy('createdAt', 'desc')
+          .get();
+
+        AppState.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderQuizList();
+        updateQuizSelects();
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to load quizzes:', error);
+        showToast('Failed to load quizzes', 'error');
+      }
+    }
+
+    function renderQuizList() {
+      const container = document.getElementById('quizList');
+
+      if (AppState.quizzes.length === 0) {
+        container.innerHTML = `
+          <div class="text-center p-60 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl" style="grid-column: 1/-1;">
+            <div class="text-6xl mb-24 opacity-20">📝</div>
+            <h3 class="text-xl font-bold text-slate-800 mb-8">No Quizzes Found</h3>
+            <p class="text-slate-500 mb-32">Create your first assessment to begin tracking academic performance.</p>
+            <button class="btn btn-primary px-32 py-14 rounded-xl shadow-lg" onclick="showCreateQuizModal()">Initialize First Quiz</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = AppState.quizzes.map(quiz => {
+        const status = (quiz.status || 'DRAFT').toUpperCase();
+        const statusClass = status === 'LIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200';
+
+        return `
+          <div class="group relative bg-white rounded-[32px] border border-slate-200 p-32 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-200 transition-all duration-300">
+            <div class="flex justify-between items-start mb-24">
+              <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">📄</div>
+              <span class="text-[10px] font-black px-12 py-6 rounded-full border ${statusClass} tracking-[0.15em] uppercase">${status}</span>
+            </div>
+            
+            <h3 class="text-xl font-black text-slate-900 mb-10 leading-tight tracking-tight uppercase">${escapeHTML(quiz.title || 'Untitled Quiz')}</h3>
+            <p class="text-sm text-slate-500 line-clamp-2 mb-32 font-medium leading-relaxed">${escapeHTML(quiz.description || 'No description provided.')}</p>
+            
+            <div class="flex items-center justify-between pt-24 border-t border-slate-50">
+              <div class="flex items-center gap-3">
+                <div class="flex -space-x-3">
+                  <div class="w-8 h-8 rounded-full bg-slate-100 border-2 border-white"></div>
+                  <div class="w-8 h-8 rounded-full bg-slate-200 border-2 border-white"></div>
+                </div>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">v${quiz.version || '1.0'}</span>
+              </div>
+              
+              <div class="flex gap-6">
+                <button class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-danger hover:bg-danger/5 rounded-xl transition-all" title="Archive" onclick="deleteQuiz('${quiz.id}')">
+                  <span class="text-lg">🗑️</span>
+                </button>
+                <button class="btn btn-primary px-24 py-12 rounded-2xl font-black text-xs shadow-lg shadow-indigo-100 hover:shadow-indigo-200 transform active:scale-95 transition-all" onclick="editQuiz('${quiz.id}')">
+                  Edit Assessment
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateQuizSelects() {
+      const activeSelect = document.getElementById('activeQuizSelect');
+      const matrixSelect = document.getElementById('matrixQuizSelect');
+
+      // Clear existing options
+      activeSelect.innerHTML = '';
+      matrixSelect.innerHTML = '';
+
+      // Add default option
+      const defaultOpt1 = document.createElement('option');
+      defaultOpt1.value = '';
+      defaultOpt1.textContent = 'Select Quiz...';
+      activeSelect.appendChild(defaultOpt1);
+
+      const defaultOpt2 = document.createElement('option');
+      defaultOpt2.value = '';
+      defaultOpt2.textContent = 'Select Quiz...';
+      matrixSelect.appendChild(defaultOpt2);
+
+      // Add quiz options safely
+      AppState.quizzes.forEach(q => {
+        const opt1 = document.createElement('option');
+        opt1.value = q.id;
+        opt1.textContent = q.title || 'Untitled';
+        activeSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = q.id;
+        opt2.textContent = q.title || 'Untitled';
+        matrixSelect.appendChild(opt2);
+      });
+
+      // Add change listeners
+      document.getElementById('activeQuizSelect').onchange = (e) => {
+        if (e.target.value) selectQuizForProctoring(e.target.value);
+      };
+      document.getElementById('matrixQuizSelect').onchange = (e) => {
+        if (e.target.value) loadMatrixData(e.target.value);
+      };
+    }
+
+    async function loadCourses() {
+      try {
+        const snapshot = await db.collection('courses')
+          .orderBy('createdAt', 'desc')
+          .get();
+
+        AppState.courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateCourseSelects();
+        updateCourseSelects();
+        renderAdminSidebar();
+
+      } catch (error) {
+        console.error('[COURSES] Failed to load courses:', error);
+        showToast('Failed to load courses', 'error');
+      }
+    }
+
+    function updateCourseSelects() {
+      const courseSelect = document.getElementById('courseSelect');
+      const rosterSelect = document.getElementById('newQuizRosterSelect');
+
+      if (courseSelect) {
+        courseSelect.innerHTML = '';
+
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Select course...';
+        courseSelect.appendChild(defaultOpt);
+
+        AppState.courses.forEach(course => {
+          const opt = document.createElement('option');
+          opt.value = course.id;
+          opt.textContent = `${course.name || 'Course'}${course.block ? ` (${course.block})` : ''}`;
+          courseSelect.appendChild(opt);
+        });
+
+        courseSelect.onchange = (e) => {
+          AppState.selectedCourseId = e.target.value || null;
+        };
+      }
+
+      if (rosterSelect) {
+        rosterSelect.innerHTML = '';
+
+        const noRosterOpt = document.createElement('option');
+        noRosterOpt.value = '';
+        noRosterOpt.textContent = 'No roster';
+        rosterSelect.appendChild(noRosterOpt);
+
+        AppState.courses.forEach(course => {
+          const opt = document.createElement('option');
+          opt.value = course.id;
+          opt.textContent = `${course.name || 'Course'}${course.block ? ` (${course.block})` : ''}`;
+          rosterSelect.appendChild(opt);
+        });
+      }
+    }
+
+    function showCreateQuizModal() {
+      document.getElementById('newQuizTitle').value = '';
+      document.getElementById('newQuizDescription').value = '';
+      document.getElementById('newQuizRosterSelect').value = '';
+      DOM.createQuizModal.classList.remove('hidden');
+    }
+
+    function closeCreateQuizModal() {
+      DOM.createQuizModal.classList.add('hidden');
+    }
+
+    async function createNewQuiz() {
+      const title = document.getElementById('newQuizTitle').value.trim();
+      const description = document.getElementById('newQuizDescription').value.trim();
+      const rosterCourseId = document.getElementById('newQuizRosterSelect').value || null;
+
+      // Input validation
+      if (!title) {
+        showToast('Please enter a quiz title', 'warning');
+        return;
+      }
+
+      if (title.length > 200) {
+        showToast('Quiz title must be 200 characters or less', 'warning');
+        return;
+      }
+
+      if (description.length > 1000) {
+        showToast('Description must be 1000 characters or less', 'warning');
+        return;
+      }
+
+      try {
+        const quizRef = await db.collection('quizzes').add({
+          title,
+          description,
+          status: 'DRAFT',
+          createdBy: USER_EMAIL,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          rosterCourseId,
+          settings: {
+            shuffleQuestions: false,
+            shuffleOptions: true,
+            showResults: false
+          }
+        });
+
+        closeCreateQuizModal();
+        showToast('Quiz created successfully!', 'success');
+        await loadQuizzes();
+        editQuiz(quizRef.id);
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to create quiz:', error);
+        showToast('Failed to create quiz', 'error');
+      }
+    }
+
+    async function editQuiz(quizId) {
+      AppState.currentEditingQuiz = quizId;
+      const quiz = AppState.quizzes.find(q => q.id === quizId);
+
+      document.getElementById('editingQuizTitle').textContent = quiz?.title || 'Quiz Questions';
+
+      // Toggle Views
+      document.getElementById('quizList').parentElement.classList.add('hidden'); // Hide list card
+      document.getElementById('quizEditorView').classList.remove('hidden');
+      document.getElementById('quizEditorView').style.display = 'flex'; // Ensure flex layout
+
+      await loadQuestions(quizId);
+    }
+
+    async function loadQuestions(quizId) {
+      try {
+        const snapshot = await db.collection('quizzes').doc(quizId)
+          .collection('questions').orderBy('order').get();
+
+        const questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        AppState.currentQuestions = questions;
+        renderQuestionsList(questions);
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to load questions:', error);
+        showToast('Failed to load questions', 'error');
+      }
+    }
+
+    function renderQuestionsList(questions) {
+      const container = document.getElementById('questionsSidebarList');
+      const countLabel = document.getElementById('questionsSidebarCount');
+      if (countLabel) countLabel.textContent = `${questions.length} TOTAL`;
+      container.innerHTML = '';
+
+      if (questions.length === 0) {
+        container.innerHTML = `
+          <div class="p-40 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 m-12">
+            <div class="text-2xl mb-8 opacity-20">🧊</div>
+            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-tight">No Elements<br>Defined</div>
+          </div>
+        `;
+        selectQuestion(null);
+        return;
+      }
+
+      questions.forEach((q, idx) => {
+        const item = document.createElement('div');
+        item.className = `question-list-item group ${AppState.currentQuestionId === q.id ? 'active' : ''}`;
+        item.id = `qitem_${q.id}`;
+        item.onclick = () => selectQuestion(q.id);
+
+        item.innerHTML = `
+          <div class="flex items-center gap-4 flex-1 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors ${AppState.currentQuestionId === q.id ? 'bg-indigo-100 text-indigo-700' : ''}">
+               ${idx + 1}
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-black text-slate-700 truncate group-hover:text-slate-900 transition-colors">${q.text ? escapeHTML(q.text.substring(0, 40)) : '<em class="opacity-40">Untitled Element</em>'}</span>
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">${q.imageUrl ? '🖼️ Visual Asset Attached' : 'Text Only'}</span>
+            </div>
+          </div>
+          <button class="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-danger hover:bg-danger/10 rounded-xl transition-all opacity-0 group-hover:opacity-100" 
+                  title="Archive Element"
+                  onclick="event.stopPropagation(); deleteQuestion('${q.id}')">
+            &times;
+          </button>
+        `;
+
+        container.appendChild(item);
+      });
+
+      // Selection persistence
+      if (AppState.currentQuestionId && questions.find(q => q.id === AppState.currentQuestionId)) {
+        selectQuestion(AppState.currentQuestionId);
+      } else if (!AppState.currentQuestionId && questions.length > 0) {
+        selectQuestion(questions[0].id);
+      }
+    }
+
+    function selectQuestion(questionId) {
+      AppState.currentQuestionId = questionId;
+
+      document.querySelectorAll('.question-list-item').forEach(el => el.classList.remove('active'));
+      if (questionId) {
+        const activeItem = document.getElementById(`qitem_${questionId}`);
+        if (activeItem) activeItem.classList.add('active');
+
+        document.getElementById('emptyEditorState').classList.add('hidden');
+        document.getElementById('activeQuestionEditor').classList.remove('hidden');
+
+        const question = AppState.currentQuestions.find(q => q.id === questionId);
+        renderQuestionEditor(question);
+      } else {
+        document.getElementById('emptyEditorState').classList.remove('hidden');
+        document.getElementById('activeQuestionEditor').classList.add('hidden');
+      }
+    }
+
+    // ============================================
+    // QUIZ EDITOR HELPERS (Modular to prevent syntax errors)
+    // ============================================
+
+    function createQuestionTextSection(q) {
+      const group = document.createElement('div');
+      group.className = 'mb-40';
+
+      const label = document.createElement('div');
+      label.className = 'text-[10px] font-black text-slate-400 uppercase tracking-widest mb-16 flex items-center gap-2';
+      label.innerHTML = '<span class="w-2 h-2 rounded-full bg-indigo-500"></span> Question Content';
+
+      const textarea = document.createElement('textarea');
+      textarea.id = 'qtext_' + q.id;
+      textarea.className = 'w-full p-24 bg-slate-50 border-none rounded-2xl focus:ring-8 focus:ring-indigo-500/5 focus:bg-white transition-all text-lg font-black text-slate-900 placeholder:text-slate-300 placeholder:italic placeholder:font-medium leading-relaxed resize-none';
+      textarea.rows = 3;
+      textarea.placeholder = 'State your inquiry here...';
+      textarea.value = q.text || '';
+      textarea.oninput = () => {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+      };
+      textarea.onchange = () => updateQuestion(q.id);
+
+      group.appendChild(label);
+      group.appendChild(textarea);
+
+      // Initial height adjustment
+      setTimeout(() => {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+      }, 0);
+
+      return group;
+    }
+
+    function createQuestionImageSection(q) {
+      const group = document.createElement('div');
+      group.className = 'mb-40 p-24 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200';
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between mb-20';
+      header.innerHTML = `
+        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-slate-300"></span> Media Asset
+        </div>
+      `;
+
+      const uploadZone = document.createElement('div');
+      uploadZone.className = 'group relative flex flex-col items-center justify-center min-h-[160px] bg-white rounded-2xl border border-slate-100 shadow-sm cursor-pointer hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5 transition-all overflow-hidden';
+      uploadZone.onclick = () => triggerImageUpload('question', q.id);
+
+      if (q.imageUrl) {
+        uploadZone.innerHTML = `
+          <img src="${sanitizeURL(q.imageUrl)}" class="max-h-[300px] w-full object-contain p-12 transition-transform group-hover:scale-[1.02]">
+          <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all backdrop-blur-[2px]">
+             <span class="bg-white px-16 py-8 rounded-xl font-bold text-xs text-slate-900 shadow-xl">Replace Asset</span>
+          </div>
+        `;
+      } else {
+        uploadZone.innerHTML = `
+          <div class="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-xl mb-12 group-hover:bg-indigo-50 group-hover:scale-110 transition-all">🖼️</div>
+          <div class="text-xs font-bold text-slate-400 group-hover:text-indigo-600 transition-colors uppercase tracking-widest">Add Visual Context</div>
+        `;
+      }
+
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.id = 'qimg_input_' + q.id;
+      fileInput.className = 'hidden';
+      fileInput.accept = 'image/png, image/jpeg, image/gif, image/webp';
+      fileInput.onchange = function () { uploadQuestionImage(q.id, this); };
+
+      const progressDiv = document.createElement('div');
+      progressDiv.id = 'qimg_progress_' + q.id;
+      progressDiv.className = 'progress-bar hidden mt-16 rounded-full overflow-hidden h-2 bg-slate-100';
+      progressDiv.innerHTML = '<div class="progress-fill bg-indigo-500 h-full transition-all" style="width: 0%"></div>';
+
+      group.appendChild(header);
+      group.appendChild(uploadZone);
+      group.appendChild(fileInput);
+      group.appendChild(progressDiv);
+      return group;
+    }
+
+    function createOptionsSection(q) {
+      const group = document.createElement('div');
+      group.className = 'mb-40';
+
+      const header = document.createElement('div');
+      header.className = 'text-[10px] font-black text-slate-400 uppercase tracking-widest mb-16 flex items-center justify-between';
+      header.innerHTML = `
+        <div class="flex items-center gap-2">
+           <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Response Matrix
+        </div>
+        <div class="text-[9px] opacity-60">SELECT PRIMARY CORRECT ANSWER</div>
+      `;
+
+      const container = document.createElement('div');
+      container.id = 'options_' + q.id;
+      container.className = 'space-y-4';
+
+      (q.options || []).forEach((opt, optIdx) => {
+        const row = document.createElement('div');
+        row.className = `group flex items-center gap-4 p-8 bg-slate-50/50 rounded-2xl border transition-all ${opt.isCorrect ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-100 hover:bg-slate-50'}`;
+
+        row.innerHTML = `
+          <label class="w-12 h-12 flex items-center justify-center cursor-pointer">
+            <input type="radio" name="correct_${q.id}" ${opt.isCorrect ? 'checked' : ''} class="hidden">
+            <div class="radio-visual w-6 h-6 rounded-full border-2 transition-all ${opt.isCorrect ? 'bg-emerald-500 border-white shadow-lg ring-4 ring-emerald-500/10' : 'bg-white border-slate-200'}"></div>
+          </label>
+          <div class="flex-1">
+             <input type="text" class="w-full px-16 py-12 bg-transparent border-none rounded-xl focus:ring-0 text-slate-700 font-bold placeholder:text-slate-200 placeholder:italic transition-all" placeholder="Enter option..." id="opttext_${q.id}_${optIdx}">
+          </div>
+          <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all pr-8">
+             <button class="w-10 h-10 flex items-center justify-center bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm" id="optimgbtn_${q.id}_${optIdx}" title="Attach Visual">
+                🖼️
+             </button>
+             <button class="w-10 h-10 flex items-center justify-center bg-white border border-slate-100 rounded-xl text-slate-200 hover:text-danger hover:border-danger/20 transition-all shadow-sm" onclick="removeOption('${q.id}', ${optIdx})" title="Purge Option">
+                &times;
+             </button>
+          </div>
+          <input type="file" id="optimg_${q.id}_${optIdx}" class="hidden" accept="image/png, image/jpeg, image/gif, image/webp">
+        `;
+
+        row.querySelector('input[type="text"]').value = opt.text || '';
+        const textIn = row.querySelector('input[type="text"]');
+        textIn.onchange = (e) => updateOption(q.id, optIdx, 'text', e.target.value);
+
+        const radio = row.querySelector('input[type="radio"]');
+        radio.onchange = () => {
+          updateOption(q.id, optIdx, 'isCorrect', true);
+          // Visual Reset
+          const allRows = container.querySelectorAll('.group');
+          allRows.forEach(r => {
+            r.classList.remove('border-emerald-200', 'bg-emerald-50/20');
+            r.classList.add('border-slate-100');
+            const visual = r.querySelector('.radio-visual');
+            visual.className = 'radio-visual w-6 h-6 rounded-full border-2 transition-all bg-white border-slate-200';
+          });
+          // Visual Set
+          row.classList.remove('border-slate-100');
+          row.classList.add('border-emerald-200', 'bg-emerald-50/20');
+          row.querySelector('.radio-visual').className = 'radio-visual w-6 h-6 rounded-full border-2 transition-all bg-emerald-500 border-white shadow-lg ring-4 ring-emerald-500/10';
+        };
+
+        const imgBtn = row.querySelector('button[title="Attach Visual"]');
+        imgBtn.onclick = () => triggerOptionImageUpload(q.id, optIdx);
+
+        const fileIn = row.querySelector('input[type="file"]');
+        fileIn.onchange = function () { uploadOptionImage(q.id, optIdx, this); };
+
+        container.appendChild(row);
+      });
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'w-full py-16 mt-16 bg-white border-2 border-dashed border-slate-100 rounded-2xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-indigo-50/30 hover:border-indigo-200 hover:text-indigo-600 transition-all flex items-center justify-center gap-2';
+      addBtn.innerHTML = '<span>+</span> Expand Response Matrix';
+      addBtn.onclick = () => addOption(q.id);
+
+      group.appendChild(header);
+      group.appendChild(container);
+      group.appendChild(addBtn);
+      return group;
+    }
+
+    function renderQuestionEditor(q) {
+      const container = document.getElementById('activeQuestionEditor');
+      container.innerHTML = '';
+
+      if (!q) return;
+
+      const editor = document.createElement('div');
+      editor.className = 'question-card';
+
+      editor.appendChild(createQuestionTextSection(q));
+      editor.appendChild(createQuestionImageSection(q));
+      editor.appendChild(createOptionsSection(q));
+
+      container.appendChild(editor);
+    }
+
+    function closeQuizEditor() {
+      document.getElementById('quizEditorView').classList.add('hidden');
+      document.getElementById('quizList').parentElement.classList.remove('hidden'); // Show card
+      AppState.currentEditingQuiz = null;
+      AppState.currentQuestionId = null;
+      // Refresh list to show potential title changes
+      loadQuizzes();
+    }
+
+    async function addNewQuestion() {
+      if (!AppState.currentEditingQuiz) return;
+
+      try {
+        const questionsRef = db.collection('quizzes').doc(AppState.currentEditingQuiz).collection('questions');
+        const snapshot = await questionsRef.get();
+        const order = snapshot.size;
+
+        await questionsRef.add({
+          text: '',
+          imageUrl: null,
+          options: [
+            { id: 'a', text: '', imageUrl: null, isCorrect: true },
+            { id: 'b', text: '', imageUrl: null, isCorrect: false },
+            { id: 'c', text: '', imageUrl: null, isCorrect: false },
+            { id: 'd', text: '', imageUrl: null, isCorrect: false }
+          ],
+          order,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await loadQuestions(AppState.currentEditingQuiz);
+        showToast('Question added', 'success');
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to add question:', error);
+        showToast('Failed to add question', 'error');
+      }
+    }
+
+    async function updateQuestion(questionId) {
+      const text = document.getElementById(`qtext_${questionId}`).value;
+
+      try {
+        await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId)
+          .update({ text, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      } catch (error) {
+        console.error('[TEACHER] Failed to update question:', error);
+      }
+    }
+
+    function buildQuestionDraft(questionId) {
+      const question = AppState.currentQuestions.find(q => q.id === questionId);
+      const text = document.getElementById(`qtext_${questionId}`)?.value ?? '';
+      const optionRows = document.querySelectorAll(`#options_${questionId} .option-editor`);
+
+      const options = Array.from(optionRows).map((row, idx) => {
+        const input = row.querySelector('input.form-input');
+        const radio = row.querySelector('input[type="radio"]');
+        const baseOption = question?.options?.[idx] || {};
+
+        return {
+          id: baseOption.id || `opt_${idx}`,
+          text: input ? input.value : '',
+          imageUrl: baseOption.imageUrl || null,
+          isCorrect: Boolean(radio?.checked)
+        };
+      });
+
+      return { text, options };
+    }
+
+    async function saveQuestion(questionId, { showSuccess = true, showErrors = true } = {}) {
+      if (!AppState.currentEditingQuiz) return;
+
+      const draft = buildQuestionDraft(questionId);
+      if (!draft) return;
+
+      // Input validation
+      if (draft.text.length > 5000) {
+        if (showErrors) {
+          showToast('Question text must be 5000 characters or less', 'warning');
+        }
+        return;
+      }
+
+      // Validate options
+      for (let opt of draft.options) {
+        if (opt.text && opt.text.length > 1000) {
+          if (showErrors) {
+            showToast('Option text must be 1000 characters or less', 'warning');
+          }
+          return;
+        }
+      }
+
+      try {
+        await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId)
+          .update({
+            text: draft.text,
+            options: draft.options,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+        if (showSuccess) {
+          showToast('Saved', 'success');
+        }
+      } catch (error) {
+        logger.error('[TEACHER] Failed to save question:', error);
+        if (showErrors) {
+          showToast('Failed to save question', 'error');
+        }
+        throw error;
+      }
+    }
+
+    async function saveAllQuestions() {
+      if (!AppState.currentQuestions.length) {
+        showToast('No questions to save', 'warning');
+        return;
+      }
+
+      try {
+        await Promise.all(
+          AppState.currentQuestions.map(question => saveQuestion(question.id, {
+            showSuccess: false,
+            showErrors: false
+          }))
+        );
+        showToast('All questions saved', 'success');
+      } catch (error) {
+        console.error('[TEACHER] Failed to save all questions:', error);
+        showToast('Failed to save all questions', 'error');
+      }
+    }
+
+    async function deleteQuestion(questionId) {
+      if (!confirm('Delete this question?')) return;
+
+      try {
+        await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId).delete();
+
+        await loadQuestions(AppState.currentEditingQuiz);
+        showToast('Question deleted', 'success');
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to delete question:', error);
+        showToast('Failed to delete question', 'error');
+      }
+    }
+
+    function triggerImageUpload(type, id) {
+      document.getElementById(`qimg_input_${id}`).click();
+    }
+
+    function triggerOptionImageUpload(questionId, optIdx) {
+      document.getElementById(`optimg_${questionId}_${optIdx}`).click();
+    }
+
+    async function uploadQuestionImage(questionId, input) {
+      if (!input.files[0]) return;
+
+      const file = input.files[0];
+      const progressBar = document.getElementById(`qimg_progress_${questionId}`);
+      const progressFill = progressBar.querySelector('.progress-fill');
+
+      progressBar.classList.remove('hidden');
+
+      try {
+        const storageRef = storage.ref(`quizzes/${AppState.currentEditingQuiz}/questions/${questionId}_${Date.now()}`);
+        const metadata = { contentType: file.type };
+        const uploadTask = storageRef.put(file, metadata);
+
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            progressFill.style.width = progress + '%';
+          },
+          (error) => {
+            console.error('[UPLOAD] Error:', error);
+            showToast('Upload failed', 'error');
+            progressBar.classList.add('hidden');
+          },
+          async () => {
+            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+
+            await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+              .collection('questions').doc(questionId)
+              .update({ imageUrl: downloadURL });
+
+            progressBar.classList.add('hidden');
+            showToast('Image uploaded', 'success');
+            await loadQuestions(AppState.currentEditingQuiz);
+          }
+        );
+
+      } catch (error) {
+        console.error('[UPLOAD] Error:', error);
+        showToast('Upload failed', 'error');
+        progressBar.classList.add('hidden');
+      }
+    }
+
+    async function uploadOptionImage(questionId, optIdx, input) {
+      if (!input.files[0]) return;
+
+      const file = input.files[0];
+
+      try {
+        showToast('Uploading...', 'info');
+
+        const storageRef = storage.ref(`quizzes/${AppState.currentEditingQuiz}/options/${questionId}_opt${optIdx}_${Date.now()}`);
+        const metadata = { contentType: file.type };
+        const snapshot = await storageRef.put(file, metadata);
+        const downloadURL = await snapshot.ref.getDownloadURL();
+
+        // Get current question
+        const doc = await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId).get();
+
+        const options = doc.data().options || [];
+        options[optIdx].imageUrl = downloadURL;
+
+        await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId)
+          .update({ options });
+
+        showToast('Option image uploaded', 'success');
+        await loadQuestions(AppState.currentEditingQuiz);
+
+      } catch (error) {
+        console.error('[UPLOAD] Option image error:', error);
+        showToast('Upload failed', 'error');
+      }
+    }
+
+    async function updateOption(questionId, optIdx, field, value) {
+      try {
+        const doc = await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId).get();
+
+        const options = doc.data().options || [];
+
+        if (field === 'isCorrect') {
+          // Unset all others
+          options.forEach((opt, i) => opt.isCorrect = (i === optIdx));
+        } else {
+          options[optIdx][field] = value;
+        }
+
+        await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId)
+          .update({ options });
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to update option:', error);
+      }
+    }
+
+    async function addOption(questionId) {
+      try {
+        const doc = await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId).get();
+
+        const options = doc.data().options || [];
+        const letters = 'abcdefghij';
+        options.push({
+          id: letters[options.length] || `opt_${options.length}`,
+          text: '',
+          imageUrl: null,
+          isCorrect: false
+        });
+
+        await db.collection('quizzes').doc(AppState.currentEditingQuiz)
+          .collection('questions').doc(questionId)
+          .update({ options });
+
+        await loadQuestions(AppState.currentEditingQuiz);
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to add option:', error);
+      }
+    }
+
+
+
+    async function deleteQuiz(quizId) {
+      if (!confirm('Are you sure you want to delete this quiz and all its questions?')) return;
+
+      try {
+        // Delete questions subcollection first
+        const questionsSnapshot = await db.collection('quizzes').doc(quizId).collection('questions').get();
+        const batch = db.batch();
+        questionsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        // Delete quiz
+        await db.collection('quizzes').doc(quizId).delete();
+
+        showToast('Quiz deleted', 'success');
+        await loadQuizzes();
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to delete quiz:', error);
+        showToast('Failed to delete quiz', 'error');
+      }
+    }
+
+    // ============================================
+    // PROCTORING
+    // ============================================
+
+    function setupTeacherListeners() {
+      // Listen to authorized teachers
+      const teacherUnsub = db.collection('authorized_teachers')
+        .onSnapshot(snapshot => {
+          AppState.teachers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          // If we are on the Authorized Teachers view, refresh the list
+          const container = document.getElementById('teachersListTableContainer');
+          if (container && document.getElementById('adminPanel').classList.contains('active')) {
+            loadTeachersAndRender();
+          }
+        });
+
+      AppState.unsubscribers.push(teacherUnsub);
+    }
+
+    function selectQuizForProctoring(quizId) {
+      AppState.currentQuizId = quizId;
+
+      // Clear existing listener
+      if (AppState.sessionListener) {
+        AppState.sessionListener();
+      }
+
+      updateInviteButton(quizId);
+
+      // Update UI
+      const quiz = AppState.quizzes.find(q => q.id === quizId);
+      const banner = document.getElementById('quizStatusBanner');
+      banner.classList.remove('hidden');
+
+      if (quiz?.status === 'OPEN') {
+        banner.style.background = 'rgba(72, 187, 120, 0.2)';
+        banner.style.color = '#48bb78';
+        banner.innerHTML = '🟢 Quiz is OPEN - Students can submit answers';
+      } else {
+        banner.style.background = 'rgba(245, 101, 101, 0.2)';
+        banner.style.color = '#f56565';
+        banner.innerHTML = '🔴 Quiz is CLOSED - Open it to allow submissions';
+      }
+
+      // Listen to sessions
+      AppState.sessionListener = db.collection('sessions').doc(quizId)
+        .collection('students')
+        .onSnapshot(snapshot => {
+          updateRoster(snapshot.docs);
+        });
+
+      AppState.unsubscribers.push(AppState.sessionListener);
+    }
+
+    function updateRoster(docs) {
+      document.getElementById('studentCount').textContent = `${docs.length} Student${docs.length !== 1 ? 's' : ''}`;
+
+      if (docs.length === 0) {
+        document.getElementById('rosterBody').innerHTML = `
+          <tr><td colspan="6" class="text-center text-muted">No students connected</td></tr>
+        `;
+        return;
+      }
+
+      document.getElementById('rosterBody').innerHTML = docs.map(doc => {
+        const data = doc.data();
+        const email = data.email || doc.id;
+        const status = data.status || 'active';
+        const violations = data.violations?.length || 0;
+        const progress = data.progress || 0;
+        const lastHeartbeat = data.lastHeartbeat;
+        const isRecent = lastHeartbeat && (Date.now() - lastHeartbeat.toDate().getTime()) < 30000;
+
+        return `
+          <tr>
+            <td>${email}</td>
+            <td>
+              <span class="status-badge ${isRecent ? 'active' : 'blocked'}">
+                ${isRecent ? 'Connected' : 'Disconnected'}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge ${status}">${status}</span>
+            </td>
+            <td>
+              <div class="progress-bar" style="width: 100px; height: 6px;">
+                <div class="progress-fill" style="width: ${progress}%"></div>
+              </div>
+              <span style="font-size: 11px; color: var(--gray);">${progress}%</span>
+            </td>
+            <td class="${violations > 0 ? 'text-danger' : ''}">${violations}</td>
+            <td>
+              ${status === 'blocked' ? `
+                <button class="btn btn-sm btn-warning" onclick="unlockStudent('${doc.id}')">Unlock</button>
+              ` : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function unlockStudent(studentDocId) {
+      if (!AppState.currentQuizId) return;
+
+      try {
+        await db.collection('sessions').doc(AppState.currentQuizId)
+          .collection('students').doc(studentDocId)
+          .update({
+            status: 'active',
+            unlockedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            unlockedBy: USER_EMAIL
+          });
+
+        showToast('Student unlocked', 'success');
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to unlock student:', error);
+        showToast('Failed to unlock student', 'error');
+      }
+    }
+
+    async function toggleQuizStatus(status) {
+      const quizId = document.getElementById('activeQuizSelect').value;
+      if (!quizId) {
+        showToast('Please select a quiz first', 'warning');
+        return;
+      }
+
+      try {
+        await db.collection('quizzes').doc(quizId).update({
+          status,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Also update global state
+        await db.collection('sys_admin').doc('global_state').set({
+          activeQuizId: status === 'OPEN' ? quizId : null,
+          status,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: USER_EMAIL
+        }, { merge: true });
+
+        if (status === 'OPEN') {
+          await preseedRosterSessions(quizId);
+        }
+
+        showToast(`Quiz ${status === 'OPEN' ? 'opened' : 'closed'}`, 'success');
+        await loadQuizzes();
+        selectQuizForProctoring(quizId);
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to update quiz status:', error);
+        showToast('Failed to update quiz status', 'error');
+      }
+    }
+
+    function getQuizRosterCourseId(quizId) {
+      const quiz = AppState.quizzes.find(q => q.id === quizId);
+      return quiz?.rosterCourseId || null;
+    }
+
+    function updateInviteButton(quizId) {
+      const rosterCourseId = getQuizRosterCourseId(quizId);
+      const btn = document.getElementById('sendInvitesBtn');
+      if (!btn) return;
+
+      if (!rosterCourseId) {
+        btn.disabled = true;
+        btn.title = "This quiz does not have a roster attached. Edit the quiz settings to add a roster.";
+      } else {
+        btn.disabled = false;
+        btn.title = "Send email invitations to all students in the roster.";
+      }
+    }
+
+    async function preseedRosterSessions(quizId) {
+      const rosterCourseId = getQuizRosterCourseId(quizId);
+      if (!rosterCourseId) return;
+
+      try {
+        const rosterSnapshot = await db.collection('courses').doc(rosterCourseId)
+          .collection('roster').get();
+
+        if (rosterSnapshot.empty) {
+          return;
+        }
+
+        const sessionSnapshot = await db.collection('sessions').doc(quizId)
+          .collection('students').get();
+        const existingIds = new Set(sessionSnapshot.docs.map(doc => doc.id));
+
+        const batch = db.batch();
+        rosterSnapshot.docs.forEach(doc => {
+          if (existingIds.has(doc.id)) return;
+          const data = doc.data();
+          const sessionRef = db.collection('sessions').doc(quizId)
+            .collection('students').doc(doc.id);
+          batch.set(sessionRef, {
+            email: data.email || doc.id,
+            name: data.name || '',
+            block: data.block || '',
+            status: 'invited',
+            connectedAt: null,
+            lastHeartbeat: null,
+            violations: [],
+            progress: 0
+          }, { merge: true });
+        });
+
+        await batch.commit();
+      } catch (error) {
+        console.error('[TEACHER] Failed to preseed roster sessions:', error);
+        showToast('Failed to preseed roster sessions', 'error');
+      }
+    }
+
+    // Rate limiting for email invitations
+    const inviteRateLimiter = {
+      lastSent: {},
+      cooldownMs: 60000, // 1 minute cooldown between sends
+
+      canSend: function (quizId) {
+        const now = Date.now();
+        const lastSentTime = this.lastSent[quizId] || 0;
+        return (now - lastSentTime) > this.cooldownMs;
+      },
+
+      recordSent: function (quizId) {
+        this.lastSent[quizId] = Date.now();
+      },
+
+      getTimeRemaining: function (quizId) {
+        const now = Date.now();
+        const lastSentTime = this.lastSent[quizId] || 0;
+        const elapsed = now - lastSentTime;
+        const remaining = this.cooldownMs - elapsed;
+        return Math.ceil(remaining / 1000); // seconds
+      }
+    };
+
+    function sendInvitesForActiveQuiz() {
+      const quizId = document.getElementById('activeQuizSelect').value;
+      if (!quizId) {
+        showToast('Please select a quiz first', 'warning');
+        return;
+      }
+
+      // Rate limiting check
+      if (!inviteRateLimiter.canSend(quizId)) {
+        const secondsRemaining = inviteRateLimiter.getTimeRemaining(quizId);
+        showToast(`Please wait ${secondsRemaining} seconds before sending invites again`, 'warning');
+        return;
+      }
+
+      const rosterCourseId = getQuizRosterCourseId(quizId);
+      if (!rosterCourseId) {
+        showToast('No roster attached to this quiz', 'warning');
+        return;
+      }
+
+      // Confirmation dialog to prevent accidental sends
+      if (!confirm(`Send quiz invitations to all students in the roster?\n\nThis will send email notifications to all students.`)) {
+        return;
+      }
+
+      showToast('Sending invites...', 'info');
+      inviteRateLimiter.recordSent(quizId);
+
+      google.script.run
+        .withSuccessHandler((result) => {
+          if (result?.success) {
+            showToast(`Invites sent: ${result.sent}`, 'success');
+          } else {
+            showToast('Failed to send invites', 'error');
+          }
+        })
+        .withFailureHandler((error) => {
+          console.error('[INVITES] Failed to send invites:', error);
+          showToast('Failed to send invites', 'error');
+        })
+        .sendQuizInvites(quizId, rosterCourseId);
+    }
+
+    // ============================================
+    // THE MATRIX (Analytics)
+    // ============================================
+
+    async function loadMatrixData(quizId) {
+      try {
+        const snapshot = await db.collection('responses').doc(quizId)
+          .collection('students').get();
+
+        const students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderMatrix(students);
+
+      } catch (error) {
+        console.error('[TEACHER] Failed to load matrix data:', error);
+        showToast('Failed to load analytics', 'error');
+      }
+    }
+
+    function renderMatrix(students) {
+      // Clear quadrants
+      document.getElementById('quadrantTL').innerHTML = '';
+      document.getElementById('quadrantTR').innerHTML = '';
+      document.getElementById('quadrantBL').innerHTML = '';
+      document.getElementById('quadrantBR').innerHTML = '';
+
+      let misconceptions = 0, mastery = 0, learning = 0, luckyGuess = 0;
+
+      students.forEach(student => {
+        const answers = student.answers || {};
+
+        Object.values(answers).forEach(answer => {
+          const isCorrect = answer.isCorrect;
+          const confidence = answer.confidence || 2;
+          const isHighConfidence = confidence >= 3;
+
+          const dot = document.createElement('div');
+          dot.className = 'student-dot';
+          dot.title = `${student.email}\nAnswer: ${answer.answer}\nConfidence: ${confidence}\n${isCorrect ? 'Correct' : 'Incorrect'}`;
+
+          if (!isCorrect && isHighConfidence) {
+            // MISCONCEPTION - High confidence + Wrong
+            dot.classList.add('misconception');
+            document.getElementById('quadrantTL').appendChild(dot);
+            misconceptions++;
+          } else if (isCorrect && isHighConfidence) {
+            // MASTERY - High confidence + Correct
+            dot.classList.add('correct-confident');
+            document.getElementById('quadrantTR').appendChild(dot);
+            mastery++;
+          } else if (!isCorrect && !isHighConfidence) {
+            // LEARNING - Low confidence + Wrong
+            dot.classList.add('incorrect-unsure');
+            document.getElementById('quadrantBL').appendChild(dot);
+            learning++;
+          } else {
+            // LUCKY GUESS - Low confidence + Correct
+            dot.classList.add('correct-unsure');
+            document.getElementById('quadrantBR').appendChild(dot);
+            luckyGuess++;
+          }
+        });
+      });
+
+      const total = misconceptions + mastery + learning + luckyGuess;
+      document.getElementById('matrixStats').innerHTML = `
+        <strong>Total Responses:</strong> ${total}<br>
+        <span class="text-danger">Misconceptions: ${misconceptions}</span> |
+        <span class="text-success">Mastery: ${mastery}</span><br>
+        <span class="text-warning">Learning: ${learning}</span> |
+        <span style="color: var(--info)">Lucky Guess: ${luckyGuess}</span>
+      `;
+    }
+
+    // ============================================
+    // ADMIN PANEL
+    // ============================================
+
+    // Unified list renderer for the authorized teachers view
+    async function loadTeachersAndRender() {
+      const container = document.getElementById('teachersListTableContainer');
+      if (!container) return;
+
+      try {
+        const teachersSnap = await db.collection('authorized_teachers').get();
+        if (teachersSnap.empty) {
+          container.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-40 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl">
+                <div class="text-5xl mb-16 opacity-20">🛡️</div>
+                <div class="text-sm font-semibold text-slate-500">Security Vault Empty</div>
+                <p class="text-[11px] text-slate-400 mt-4 px-40">Only you have access. Authorize other emails to collaborate.</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <table class="w-full text-left">
+              <thead class="bg-slate-50/80 text-[10px] uppercase tracking-widest text-slate-400 border-b border-slate-200">
+                <tr>
+                  <th class="px-24 py-14 font-bold">Authorized Account</th>
+                  <th class="px-24 py-14 font-bold text-right">Access Control</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${teachersSnap.docs.map(t => {
+          const d = t.data();
+          const isSelf = d.email === USER_EMAIL;
+          return `
+                    <tr class="group hover:bg-slate-50/50 transition-all">
+                      <td class="px-24 py-16">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 uppercase">
+                            ${(d.email || '?').charAt(0)}
+                          </div>
+                          <div>
+                            <div class="font-semibold text-slate-700 text-sm">${escapeHTML(d.email)}</div>
+                            <div class="text-[10px] text-slate-400 uppercase tracking-tighter">${d.role || 'System Authorized'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-24 py-16 text-right">
+                        ${isSelf ? `
+                          <span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-10 py-4 rounded-full border border-indigo-100 shadow-sm">MASTER ACCOUNT</span>
+                        ` : `
+                          <button class="text-xs font-bold text-danger bg-danger/5 hover:bg-danger/10 border border-danger/10 px-12 py-6 rounded-lg transition-all transform hover:scale-105" 
+                                  onclick="removeTeacher('${d.email}')">
+                            Revoke Access
+                          </button>
+                        `}
+                      </td>
+                    </tr>`;
+        }).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      } catch (e) {
+        console.error(e);
+        container.innerHTML = `
+            <div class="p-40 text-center bg-red-50 border border-red-100 rounded-3xl">
+                <div class="text-3xl mb-12">🔏</div>
+                <div class="text-sm font-bold text-red-900">Access Error</div>
+                <p class="text-xs text-red-600/70 mt-2">Failed to synchronize authorization tokens.</p>
+            </div>`;
+      }
+    }
+
+    async function addTeacher() {
+      const email = document.getElementById('newTeacherEmail').value.trim().toLowerCase();
+
+      // Comprehensive email validation
+      if (!isValidEmail(email)) {
+        showToast('Please enter a valid email address', 'warning');
+        return;
+      }
+
+      // CSRF protection: Confirmation step
+      if (!confirm(`Add ${email} as an authorized teacher?\n\nThis will grant them full access to create quizzes, view student data, and manage courses.`)) {
+        return;
+      }
+
+      try {
+        // Check if teacher already exists
+        const existingDoc = await db.collection('authorized_teachers').doc(email).get();
+        if (existingDoc.exists) {
+          showToast('Teacher already authorized', 'warning');
+          return;
+        }
+
+        await db.collection('authorized_teachers').doc(email).set({
+          email,
+          displayName: email.split('@')[0],
+          role: 'teacher',
+          addedBy: USER_EMAIL,
+          addedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        document.getElementById('newTeacherEmail').value = '';
+        showToast('Teacher added successfully', 'success');
+
+        // Log audit event
+        try {
+          await db.collection('audit_log').add({
+            action: 'teacher_added',
+            email: USER_EMAIL,
+            targetEmail: email,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            details: { addedBy: USER_EMAIL }
+          });
+        } catch (auditError) {
+          console.error('[AUDIT] Failed to log teacher addition:', auditError);
+        }
+
+      } catch (error) {
+        console.error('[ADMIN] Failed to add teacher:', error);
+        showToast('Failed to add teacher', 'error');
+      }
+    }
+
+    // ============================================
+    // ADMIN PANEL 2.0 LOGIC
+    // ============================================
+
+    function renderAdminSidebar() {
+      const listContainer = document.getElementById('adminCourseList');
+      if (!listContainer) return;
+
+      if (AppState.courses.length === 0) {
+        listContainer.innerHTML = `
+          <div class="p-20 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+            <div class="text-3xl mb-8 opacity-20">📚</div>
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">No Active<br>Courses</div>
+          </div>
+        `;
+        return;
+      }
+
+      listContainer.innerHTML = AppState.courses.map(course => `
+        <div class="question-list-item group flex items-center gap-3 px-16 py-12 rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all cursor-pointer ${AppState.selectedCourseId === course.id ? 'active bg-indigo-50/50 border-indigo-100' : ''}" 
+             onclick="renderCourseRoster('${course.id}')">
+          <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-sm group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors ${AppState.selectedCourseId === course.id ? 'bg-indigo-100 text-indigo-700' : ''}">📖</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold truncate text-slate-700 group-hover:text-slate-900 transition-colors" style="font-size: 13px;">${escapeHTML(course.name)}</div>
+            <div class="text-[10px] font-black text-slate-400 truncate uppercase mt-0.5 tracking-tighter">${escapeHTML(course.block)}</div>
+          </div>
+          <div class="text-[10px] font-black bg-white border border-slate-200 px-8 py-2 rounded-lg text-slate-500 shadow-sm opacity-60 group-hover:opacity-100 transition-all">
+            ${course.rosterCount || 0}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCreateCourseView() {
+      AppState.selectedCourseId = null;
+      renderAdminSidebar();
+
+      const main = document.getElementById('adminMainContent');
+      main.innerHTML = `
+        <div class="p-60 flex items-center justify-center min-h-[500px]">
+          <div class="w-full max-w-[500px] bg-white rounded-[40px] border border-slate-100 shadow-2xl p-48 animate-in fade-in zoom-in duration-500">
+            <div class="mb-40">
+              <div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl mb-24 text-indigo-600 shadow-inner">📚</div>
+              <h2 class="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">Initialize Course</h2>
+              <p class="text-xs font-bold text-slate-400 mt-12 uppercase tracking-widest">Construct a new academic registry</p>
+            </div>
+            
+            <div class="space-y-32">
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-12 block">Course Designation</label>
+                <input type="text" id="newCourseNameInput" class="w-full p-20 bg-slate-50 border-none rounded-2xl focus:ring-8 focus:ring-indigo-500/5 focus:bg-white transition-all font-bold text-slate-900 placeholder:text-slate-300" placeholder="e.g. Advanced Placement Biology">
+              </div>
+              
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-12 block">Schedule Index / Block</label>
+                <input type="text" id="newCourseBlockInput" class="w-full p-20 bg-slate-50 border-none rounded-2xl focus:ring-8 focus:ring-indigo-500/5 focus:bg-white transition-all font-bold text-slate-900 placeholder:text-slate-300" placeholder="e.g. Period 2 / B-Block">
+              </div>
+              
+              <div class="pt-12">
+                <button class="btn btn-primary w-full py-20 rounded-[28px] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:shadow-indigo-200 transform active:scale-95 transition-all" onclick="createCourse()">
+                  Authorize and Build
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function createCourse() {
+      const nameCtx = document.getElementById('newCourseNameInput');
+      const blockCtx = document.getElementById('newCourseBlockInput');
+
+      const name = nameCtx ? nameCtx.value.trim() : '';
+      const block = blockCtx ? blockCtx.value.trim() : '';
+
+      if (!name) return showToast('Course name required', 'warning');
+
+      try {
+        await db.collection('courses').add({
+          name, block,
+          createdBy: USER_EMAIL,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          rosterCount: 0
+        });
+        showToast('Course successfully created', 'success');
+        await loadCourses();
+        const newCourse = AppState.courses.find(c => c.name === name);
+        if (newCourse) renderCourseRoster(newCourse.id);
+        else renderAdminSidebar();
+      } catch (e) {
+        console.error(e);
+        showToast('System error creating course', 'error');
+      }
+    }
+
+    async function renderCourseRoster(courseId) {
+      AppState.selectedCourseId = courseId;
+      renderAdminSidebar();
+
+      const course = AppState.courses.find(c => c.id === courseId);
+      if (!course) return;
+
+      const main = document.getElementById('adminMainContent');
+      main.innerHTML = `
+        <div class="h-full flex items-center justify-center bg-gray-50/50">
+            <div class="flex flex-col items-center gap-4">
+                <div class="spinner border-4 border-primary/20 border-t-primary rounded-full w-10 h-10 animate-spin"></div>
+                <div class="text-sm font-medium text-muted animate-pulse">Synchronizing roster...</div>
+            </div>
+        </div>`;
+
+      try {
+        const rosterSnap = await db.collection('courses').doc(courseId).collection('roster').get();
+        const students = rosterSnap.docs
+          .map(doc => doc.data())
+          .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+        const csvContent = students.map(s => `${s.email}, ${s.name || ''}, ${s.block || ''}`).join('\n');
+
+        main.innerHTML = `
+         <div class="bg-white border-b border-slate-100 px-32 py-20 flex items-center justify-between sticky top-0 z-20 shadow-sm shadow-slate-200/20">
+             <div class="flex items-center gap-16">
+                <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-primary text-xl shadow-inner">🎓</div>
+                <div>
+                   <h2 class="text-xl font-black text-slate-900 tracking-tight leading-none m-0">
+                       ${escapeHTML(course.name)} 
+                   </h2>
+                   <div class="flex items-center gap-3 mt-6">
+                      <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-10 py-4 rounded-lg">${escapeHTML(course.block)}</span>
+                      <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                      <span class="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-10 py-4 rounded-lg">${students.length} Enrolled</span>
+                   </div>
+                </div>
+             </div>
+             <div class="flex items-center gap-8">
+                <button class="btn btn-sm text-slate-400 hover:text-danger hover:bg-danger/5 px-16 py-10 rounded-xl font-bold transition-all" onclick="deleteCourse('${course.id}')">Archive Course</button>
+                <div class="h-6 w-px bg-slate-200 mx-8"></div>
+                <button class="btn btn-primary px-24 py-12 rounded-2xl font-black shadow-lg shadow-indigo-100 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all" onclick="toggleImportModal(true)">
+                   Manage Roster
+                </button>
+             </div>
+          </div>
+
+          <!-- Enhanced Roster Data Table -->
+          <div class="flex-1 overflow-y-auto bg-slate-50/30 p-32">
+            ${students.length === 0 ? `
+                <div class="flex flex-col items-center justify-center p-60 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-white shadow-sm transition-all hover:border-indigo-200">
+                    <div class="text-6xl mb-24 opacity-20">📇</div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-8">Roster is empty</h3>
+                    <p class="text-slate-500 max-w-sm mb-32">Import your student directory to begin distributing assessments to this block.</p>
+                    <button class="btn btn-primary px-32 py-14 rounded-xl shadow-lg" onclick="toggleImportModal(true)">Bulk Import Students</button>
+                </div>
+            ` : `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50/80 text-[11px] uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th class="px-24 py-16 font-bold">Student Name</th>
+                                <th class="px-24 py-16 font-bold">Authentication Email</th>
+                                <th class="px-24 py-16 font-bold">Block</th>
+                                <th class="px-24 py-16 w-20"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            ${students.map(s => `
+                                <tr class="group hover:bg-indigo-50/30 transition-all">
+                                    <td class="px-24 py-16">
+                                       <div class="font-semibold text-slate-800">${escapeHTML(s.name)}</div>
+                                    </td>
+                                    <td class="px-24 py-16 text-slate-500 font-mono text-sm">${escapeHTML(s.email)}</td>
+                                    <td class="px-24 py-16">
+                                       <span class="px-8 py-4 bg-slate-100 rounded text-[11px] font-bold text-slate-600">${escapeHTML(s.block)}</span>
+                                    </td>
+                                    <td class="px-24 py-16 text-right">
+                                        <button class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-danger hover:bg-danger/10 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                                            title="Unenroll student"
+                                            onclick="deleteStudentFromRoster('${course.id}', '${s.email}')">
+                                            <span class="text-xl leading-none">&times;</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `}
+          </div>
+
+          <!-- Glassmorphic Import Modal Overlay -->
+          <div id="importModalOverlay" class="hidden absolute inset-0 z-20 flex flex-col backdrop-blur-md bg-white/70 animate-in fade-in duration-300">
+             <div class="m-auto w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90%]">
+                 <div class="flex items-center justify-between p-28 border-b border-slate-100 bg-slate-50/50">
+                    <div>
+                        <h3 class="font-bold text-xl text-slate-900">Directory Synchronizer</h3>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Bulk CSV Importer • Auto-matches by email</p>
+                    </div>
+                    <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 transition-all text-slate-500" onclick="toggleImportModal(false)">&times;</button>
+                 </div>
+                 <div class="flex-1 p-32 flex flex-col gap-20">
+                    <div class="p-16 bg-blue-50/50 rounded-2xl border border-blue-100 flex gap-12 items-start">
+                        <div class="text-xl mt-1">💡</div>
+                        <div class="text-xs text-blue-900 leading-relaxed">
+                           To preserve data integrity, please ensure the first column is the <b>primary student email</b>. 
+                           Existing students will be updated, new students will be enrolled.
+                        </div>
+                    </div>
+                    <textarea id="rosterImportText" class="form-textarea flex-1 font-mono text-xs leading-relaxed p-20 border border-slate-200 rounded-2xl shadow-inner focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all" 
+                        placeholder="email, name, block">${csvContent}</textarea>
+                    <div class="flex justify-end gap-12 pt-10">
+                        <button class="btn px-24 py-12 text-slate-600 font-semibold" onclick="toggleImportModal(false)">Dismiss</button>
+                        <button class="btn btn-primary px-32 py-12 rounded-xl font-bold shadow-lg shadow-indigo-200" onclick="executeImport('${course.id}')">Sync Roster Data</button>
+                    </div>
+                 </div>
+             </div>
+          </div>
+        `;
+      } catch (e) {
+        console.error(e);
+        main.innerHTML = '<div class="p-20 text-danger text-center">Failed to load roster. Please try again.</div>';
+      }
+    }
+
+    function toggleImportModal(show) {
+      const el = document.getElementById('importModalOverlay');
+      if (el) {
+        if (show) {
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      }
+    }
+
+    async function executeImport(courseId) {
+      const text = document.getElementById('rosterImportText').value;
+      const rows = text.split('\n').map(l => l.trim()).filter(l => l);
+
+      try {
+        showToast('Processing roster updates...', 'info');
+        const batch = db.batch();
+        let validCount = 0;
+
+        rows.forEach(line => {
+          const parts = line.split(',');
+          if (parts.length < 1) return;
+          const email = docIdFromEmail(parts[0]);
+          if (!isValidEmail(email)) return;
+
+          const ref = db.collection('courses').doc(courseId).collection('roster').doc(email);
+          batch.set(ref, {
+            email,
+            name: (parts[1] || '').trim(),
+            block: (parts[2] || '').trim(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }); // Using set with merge by default or overwrite? Using set creates/overwrites if data is full.
+          // We intentionally want to update names/blocks locally if changed.
+          validCount++;
+        });
+
+        await batch.commit();
+
+        // Update count
+        const snap = await db.collection('courses').doc(courseId).collection('roster').get();
+        await db.collection('courses').doc(courseId).update({ rosterCount: snap.size });
+
+        toggleImportModal(false);
+        showToast(`Roster saved (${validCount} processed)`, 'success');
+        renderCourseRoster(courseId); // Refresh view
+        loadCourses(); // Refresh sidebar counts
+
+      } catch (e) {
+        console.error(e);
+        showToast('Save failed', 'error');
+      }
+    }
+
+    async function deleteStudentFromRoster(courseId, email) {
+      if (!confirm('Are you sure you want to remove this student?')) return;
+      try {
+        await db.collection('courses').doc(courseId).collection('roster').doc(email).delete();
+
+        // Decrement count manually for speed/visuals, waiting for next loadCourses to sync absolute truth
+        showToast('Student removed', 'success');
+        renderCourseRoster(courseId);
+        loadCourses();
+      } catch (e) {
+        console.error(e);
+        showToast('Failed to remove student', 'error');
+      }
+    }
+
+    async function deleteCourse(courseId) {
+      if (!confirm('Are you sure? This will delete the course and ALL roster data permanently.')) return;
+      try {
+        await db.collection('courses').doc(courseId).delete();
+        showToast('Course deleted', 'success');
+        await loadCourses();
+        renderAdminSidebar();
+        renderCreateCourseView(); // Reset main view
+      } catch (e) {
+        showToast('Delete failed', 'error');
+      }
+    }
+
+    async function renderAuthorizedTeachersView() {
+      AppState.selectedCourseId = null;
+      renderAdminSidebar();
+
+      const main = document.getElementById('adminMainContent');
+      main.innerHTML = `
+        <div class="p-60 flex justify-center bg-slate-50/30 h-full overflow-y-auto">
+            <div class="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <div class="mb-40 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Security & Governance</h1>
+                        <p class="text-slate-500 mt-2 font-medium">Manage faculty access and system authorization.</p>
+                    </div>
+                    <div class="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center text-xl">🛡️</div>
+                </div>
+
+                <div class="card bg-white rounded-[32px] shadow-2xl shadow-slate-200/50 border border-slate-200/60 overflow-hidden mb-40">
+                    <div class="p-32 border-b border-slate-100 bg-slate-50/50">
+                        <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Authorize Educator</h2>
+                    </div>
+                    <div class="p-32">
+                         <div class="flex flex-col sm:flex-row gap-16">
+                            <div class="flex-1 relative group">
+                                <span class="absolute left-16 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-primary">✉️</span>
+                                <input type="email" id="newTeacherEmail" 
+                                       class="form-input w-full pl-44 pr-20 py-16 bg-slate-50 border-slate-200 rounded-2xl focus:ring-8 focus:ring-primary/5 focus:bg-white transition-all font-medium text-slate-700" 
+                                       placeholder="educator@school.edu">
+                            </div>
+                            <button class="btn btn-primary px-32 py-16 rounded-2xl font-black shadow-lg shadow-indigo-100 active:scale-95 transition-all flex items-center gap-2" 
+                                    onclick="addTeacher()">
+                                Grant Access
+                            </button>
+                         </div>
+                         <p class="text-[10px] text-slate-400 mt-16 flex items-center gap-2">
+                            <span class="text-emerald-500">●</span> 
+                            Teachers granted access can manage all curriculum data and view comprehensive student analytics.
+                         </p>
+                    </div>
+                </div>
+
+                <div id="teachersListTableContainer">
+                    <div class="flex justify-center p-60">
+                        <div class="spinner border-4 border-slate-200 border-t-indigo-500 rounded-full w-8 h-8 animate-spin"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      `;
+
+      loadTeachersAndRender();
+    }
+
+
+
+    async function removeTeacher(email) {
+      if (email === USER_EMAIL) {
+        showToast("You can't remove yourself", 'warning');
+        return;
+      }
+
+      if (!confirm(`Remove ${email} from authorized teachers?`)) return;
+
+      try {
+        await db.collection('authorized_teachers').doc(email).delete();
+        showToast('Teacher removed', 'success');
+
+      } catch (error) {
+        console.error('[ADMIN] Failed to remove teacher:', error);
+        showToast('Failed to remove teacher', 'error');
+      }
+    }
+
+    // ============================================
+    // STUDENT EXAM VIEW
+    // ============================================
+
+    async function initializeStudentView() {
+      console.log('[STUDENT] Initializing student view...');
+
+      const inviteQuizId = getInviteQuizId();
+      if (inviteQuizId) {
+        setupInviteQuizListener(inviteQuizId);
+      } else {
+        // Listen to global state
+        setupGlobalStateListener();
+      }
+
+      // Setup proctoring
+      setupProctoring();
+    }
+
+    function getInviteQuizId() {
+      const params = new URLSearchParams(window.location.search);
+      const quizId = params.get('quiz');
+      return quizId ? quizId.trim() : null;
+    }
+
+    function setupInviteQuizListener(quizId) {
+      const unsub = db.collection('quizzes').doc(quizId)
+        .onSnapshot(async (doc) => {
+          if (!doc.exists) {
+            showToast('Quiz not found', 'error');
+            showScreen('waitingScreen');
+            return;
+          }
+
+          const data = doc.data() || {};
+          if (data.status === 'OPEN') {
+            AppState.currentQuizId = quizId;
+            await registerStudent();
+            await loadExam(quizId);
+          } else {
+            showScreen('waitingScreen');
+          }
+        });
+
+      AppState.unsubscribers.push(unsub);
+    }
+
+    function setupGlobalStateListener() {
+      const unsub = db.collection('sys_admin').doc('global_state')
+        .onSnapshot(async (doc) => {
+          const data = doc.data() || {};
+          console.log('[STUDENT] Global state update:', data);
+
+          if (data.status === 'OPEN' && data.activeQuizId) {
+            AppState.currentQuizId = data.activeQuizId;
+            await registerStudent();
+            await loadExam(data.activeQuizId);
+          } else {
+            showScreen('waitingScreen');
+          }
+        });
+
+      AppState.unsubscribers.push(unsub);
+    }
+
+    async function registerStudent() {
+      if (!AppState.currentQuizId) return;
+
+      const studentDocId = docIdFromEmail(USER_EMAIL);
+
+      try {
+        const sessionRef = db.collection('sessions').doc(AppState.currentQuizId)
+          .collection('students').doc(studentDocId);
+
+        // Check existing session
+        const doc = await sessionRef.get();
+
+        if (doc.exists) {
+          const data = doc.data();
+          AppState.isBlocked = data.status === 'blocked';
+
+          if (AppState.isBlocked) {
+            showBlockedScreen();
+            return;
+          }
+
+          if (data.status === 'invited') {
+            await sessionRef.update({
+              status: 'active',
+              lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp(),
+              connectedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        } else {
+          // Create new session
+          await sessionRef.set({
+            email: USER_EMAIL,
+            status: 'active',
+            connectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp(),
+            violations: [],
+            progress: 0
+          });
+        }
+
+        // Listen to own status
+        setupStudentStatusListener(studentDocId);
+
+        // Start heartbeat
+        startHeartbeat(studentDocId);
+
+      } catch (error) {
+        console.error('[STUDENT] Registration failed:', error);
+      }
+    }
+
+    function setupStudentStatusListener(studentDocId) {
+      const unsub = db.collection('sessions').doc(AppState.currentQuizId)
+        .collection('students').doc(studentDocId)
+        .onSnapshot((doc) => {
+          if (!doc.exists) return;
+
+          const data = doc.data();
+          const wasBlocked = AppState.isBlocked;
+          AppState.isBlocked = data.status === 'blocked';
+
+          if (AppState.isBlocked && !wasBlocked) {
+            showBlockedScreen();
+          } else if (!AppState.isBlocked && wasBlocked) {
+            hideBlockedScreen();
+          }
+        });
+
+      AppState.unsubscribers.push(unsub);
+    }
+
+    function startHeartbeat(studentDocId) {
+      // Clear any existing heartbeat
+      if (AppState.heartbeatIntervalId) {
+        clearInterval(AppState.heartbeatIntervalId);
+      }
+
+      let failureCount = 0;
+      const maxFailures = 3;
+
+      // Improved heartbeat with 5-second interval for better monitoring
+      AppState.heartbeatIntervalId = setInterval(async () => {
+        if (AppState.isBlocked || !AppState.currentQuizId) return;
+
+        try {
+          await db.collection('sessions').doc(AppState.currentQuizId)
+            .collection('students').doc(studentDocId)
+            .update({
+              lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp(),
+              status: AppState.isBlocked ? 'blocked' : 'active'
+            });
+
+          // Reset failure count on success
+          failureCount = 0;
+
+        } catch (error) {
+          failureCount++;
+          console.warn(`[HEARTBEAT] Failed (${failureCount}/${maxFailures}):`, error.message);
+
+          // If too many failures, show warning
+          if (failureCount >= maxFailures) {
+            showToast('Connection unstable. Your progress may not be saved.', 'warning');
+          }
+        }
+      }, 5000); // 5 seconds for better monitoring
+
+      // Store interval ID in unsubscribers for cleanup
+      AppState.unsubscribers.push(() => {
+        if (AppState.heartbeatIntervalId) {
+          clearInterval(AppState.heartbeatIntervalId);
+          AppState.heartbeatIntervalId = null;
+        }
+      });
+    }
+
+    async function loadExam(quizId) {
+      try {
+        // Get quiz info
+        const quizDoc = await db.collection('quizzes').doc(quizId).get();
+        if (!quizDoc.exists) {
+          showToast('Quiz not found', 'error');
+          return;
+        }
+
+        const quiz = quizDoc.data();
+        document.getElementById('quizBadge').textContent = quiz.title || 'Quiz';
+
+        // Get questions
+        const questionsSnapshot = await db.collection('quizzes').doc(quizId)
+          .collection('questions').orderBy('order').get();
+
+        AppState.questions = questionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (AppState.questions.length === 0) {
+          showToast('No questions in this quiz', 'warning');
+          return;
+        }
+
+        // Check for existing responses
+        const studentDocId = docIdFromEmail(USER_EMAIL);
+        const responseDoc = await db.collection('responses').doc(quizId)
+          .collection('students').doc(studentDocId).get();
+
+        if (responseDoc.exists) {
+          const responseData = responseDoc.data();
+          AppState.answers = responseData.answers || {};
+
+          // Check if completed
+          const answeredCount = Object.keys(AppState.answers).length;
+          if (answeredCount >= AppState.questions.length) {
+            showCompletedScreen();
+            return;
+          }
+        }
+
+        // Show first unanswered question
+        AppState.currentQuestionIndex = Object.keys(AppState.answers).length;
+        renderCurrentQuestion();
+        showScreen('examScreen');
+
+      } catch (error) {
+        console.error('[STUDENT] Failed to load exam:', error);
+        showToast('Failed to load exam', 'error');
+      }
+    }
+
+    function renderCurrentQuestion() {
+      const question = AppState.questions[AppState.currentQuestionIndex];
+      if (!question) {
+        showCompletedScreen();
+        return;
+      }
+
+      document.getElementById('questionCounter').textContent =
+        `Question ${AppState.currentQuestionIndex + 1} of ${AppState.questions.length}`;
+
+      document.getElementById('questionText').textContent = question.text || 'No question text';
+
+      // Question image (with URL sanitization)
+      const questionImage = document.getElementById('questionImage');
+      if (question.imageUrl) {
+        const sanitized = sanitizeURL(question.imageUrl);
+        if (sanitized) {
+          questionImage.src = sanitized;
+          questionImage.classList.remove('hidden');
+        } else {
+          questionImage.classList.add('hidden');
+        }
+      } else {
+        questionImage.classList.add('hidden');
+      }
+
+      // Shuffle options using Fisher-Yates
+      const options = question.options || [];
+      const shuffledOptions = fisherYatesShuffle(options);
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+      const optionsList = document.getElementById('optionsList');
+      optionsList.innerHTML = '';
+
+      shuffledOptions.forEach((opt, idx) => {
+        const button = document.createElement('button');
+        button.className = 'option-btn';
+        button.onclick = function () {
+          selectAnswer(this, opt.id, opt.text || 'Option');
+        };
+
+        const letterSpan = document.createElement('span');
+        letterSpan.className = 'option-letter';
+        letterSpan.textContent = letters[idx];
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'option-content';
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = opt.text || 'Option';
+
+        contentDiv.appendChild(textSpan);
+
+        if (opt.imageUrl) {
+          const img = document.createElement('img');
+          img.className = 'option-image';
+          img.src = sanitizeURL(opt.imageUrl);
+          contentDiv.appendChild(img);
+        }
+
+        button.appendChild(letterSpan);
+        button.appendChild(contentDiv);
+        optionsList.appendChild(button);
+      });
+
+      AppState.selectedAnswer = null;
+    }
+
+    function selectAnswer(buttonEl, optionId, optionText) {
+      if (AppState.isBlocked) return;
+
+      AppState.selectedAnswer = {
+        id: optionId,
+        text: optionText
+      };
+
+      // Update UI
+      document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+      if (buttonEl) {
+        buttonEl.classList.add('selected');
+      }
+
+      // Show metacognition modal
+      document.getElementById('selectedAnswerPreview').textContent = optionText;
+      AppState.selectedConfidence = null;
+      document.querySelectorAll('.confidence-btn').forEach(btn => btn.classList.remove('selected'));
+      document.getElementById('submitWithConfidenceBtn').disabled = true;
+      DOM.metacognitionModal.classList.remove('hidden');
+    }
+
+    function selectConfidence(level) {
+      AppState.selectedConfidence = level;
+      document.querySelectorAll('.confidence-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.confidence) === level);
+      });
+      document.getElementById('submitWithConfidenceBtn').disabled = false;
+    }
+
+    function cancelMetacognition() {
+      DOM.metacognitionModal.classList.add('hidden');
+      AppState.selectedAnswer = null;
+      document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+    }
+
+    async function submitWithConfidence() {
+      if (!AppState.selectedAnswer || !AppState.selectedConfidence || AppState.isBlocked) return;
+
+      DOM.metacognitionModal.classList.add('hidden');
+
+      const question = AppState.questions[AppState.currentQuestionIndex];
+      const correctOption = question.options?.find(opt => opt.isCorrect);
+      const isCorrect = correctOption?.id === AppState.selectedAnswer.id;
+
+      const answerData = {
+        questionId: question.id,
+        answer: AppState.selectedAnswer.text,
+        answerId: AppState.selectedAnswer.id,
+        confidence: AppState.selectedConfidence,
+        isCorrect,
+        answeredAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      try {
+        const studentDocId = docIdFromEmail(USER_EMAIL);
+        const responseRef = db.collection('responses').doc(AppState.currentQuizId)
+          .collection('students').doc(studentDocId);
+
+        // Update response document
+        await responseRef.set({
+          email: USER_EMAIL,
+          quizId: AppState.currentQuizId,
+          [`answers.${question.id}`]: answerData,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        // Update progress
+        const progress = Math.round(((AppState.currentQuestionIndex + 1) / AppState.questions.length) * 100);
+        await db.collection('sessions').doc(AppState.currentQuizId)
+          .collection('students').doc(studentDocId)
+          .update({ progress });
+
+        // Store locally
+        AppState.answers[question.id] = answerData;
+
+        // Move to next question
+        AppState.currentQuestionIndex++;
+
+        if (AppState.currentQuestionIndex < AppState.questions.length) {
+          renderCurrentQuestion();
+        } else {
+          showCompletedScreen();
+        }
+
+      } catch (error) {
+        console.error('[STUDENT] Failed to submit answer:', error);
+
+        if (error.code === 'permission-denied') {
+          showBlockedScreen();
+        } else {
+          showToast('Failed to submit. Please try again.', 'error');
+        }
+      }
+    }
+
+    function showCompletedScreen() {
+      const totalQuestions = AppState.questions.length;
+      const correctCount = Object.values(AppState.answers).filter(a => a.isCorrect).length;
+
+      document.getElementById('completionSummary').innerHTML = `
+        <div style="font-size: 18px; margin-bottom: 10px;">
+          <strong>Score: ${correctCount} / ${totalQuestions}</strong>
+        </div>
+        <div class="text-muted">
+          Accuracy: ${Math.round((correctCount / totalQuestions) * 100)}%
+        </div>
+      `;
+
+      showScreen('completedScreen');
+    }
+
+    // ============================================
+    // PROCTORING
+    // ============================================
+
+    function setupProctoring() {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      window.addEventListener('blur', () => {
+        if (!AppState.isBlocked && AppState.currentQuizId && !AppState.hasSubmitted) {
+          startViolationTimer();
+        }
+      });
+
+      window.addEventListener('focus', clearViolationTimer);
+    }
+
+    function handleVisibilityChange() {
+      if (IS_TEACHER || AppState.isBlocked || !AppState.currentQuizId) return;
+
+      if (document.hidden) {
+        startViolationTimer();
+      } else {
+        clearViolationTimer();
+      }
+    }
+
+    function startViolationTimer() {
+      if (AppState.tabSwitchTimer) return;
+
+      AppState.tabSwitchTimer = setTimeout(async () => {
+        await recordViolation();
+      }, 1500);
+    }
+
+    function clearViolationTimer() {
+      if (AppState.tabSwitchTimer) {
+        clearTimeout(AppState.tabSwitchTimer);
+        AppState.tabSwitchTimer = null;
+      }
+    }
+
+    async function recordViolation() {
+      if (!AppState.currentQuizId) return;
+
+      const studentDocId = docIdFromEmail(USER_EMAIL);
+
+      try {
+        await db.collection('sessions').doc(AppState.currentQuizId)
+          .collection('students').doc(studentDocId)
+          .update({
+            status: 'blocked',
+            violations: firebase.firestore.FieldValue.arrayUnion({
+              type: 'tab_switch',
+              timestamp: new Date().toISOString()
+            }),
+            blockedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+        AppState.isBlocked = true;
+        showBlockedScreen();
+
+      } catch (error) {
+        console.error('[PROCTOR] Failed to record violation:', error);
+      }
+    }
+
+    function showBlockedScreen() {
+      DOM.blockedScreen.classList.remove('hidden');
+      DOM.app.classList.add('hidden');
+      clearViolationTimer();
+    }
+
+    function hideBlockedScreen() {
+      DOM.blockedScreen.classList.add('hidden');
+      DOM.app.classList.remove('hidden');
+    }
+
+    // ============================================
+    // CLEANUP
+    // ============================================
+
+    function cleanup() {
+      clearViolationTimer();
+      AppState.unsubscribers.forEach(unsub => {
+        if (typeof unsub === 'function') unsub();
+      });
+    }
+
+    window.addEventListener('beforeunload', cleanup);
+
+    // ============================================
+    // START APPLICATION
+    // ============================================
+    console.log('[SCRIPT] Setting up initialization triggers...');
+
+    // Handle DOMContentLoaded or immediate execution if already loaded
+    if (document.readyState === 'loading') {
+      console.log('[SCRIPT] DOM still loading, adding DOMContentLoaded listener');
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('[SCRIPT] DOMContentLoaded fired, calling initializeApp');
+        initializeApp();
+      });
+    } else {
+      // DOM already loaded (interactive or complete)
+      console.log('[SCRIPT] DOM already loaded (readyState:', document.readyState, '), calling initializeApp directly');
+      // Use setTimeout to ensure all scripts have finished executing
+      setTimeout(() => {
+        console.log('[SCRIPT] Executing initializeApp via setTimeout');
+        initializeApp();
+      }, 0);
+    }
+
+    window.addEventListener('error', (event) => {
+      console.error('[ERROR] Unhandled error:', event.error || event.message);
+      // Only call failInitialization if DOM elements are available
+      if (typeof failInitialization === 'function') {
+        failInitialization('An unexpected error occurred: ' + (event.message || 'Unknown error'));
+      }
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('[ERROR] Unhandled promise rejection:', event.reason);
+      if (typeof failInitialization === 'function') {
+        failInitialization('An unexpected error occurred: ' + (event.reason?.message || event.reason || 'Unknown error'));
+      }
+    });
+
+    console.log('[SCRIPT] Main script setup complete');
+  </script>
+</body>
+
+</html>

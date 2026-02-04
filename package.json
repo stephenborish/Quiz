@@ -1,26 +1,28 @@
 {
-  "name": "secure-assessment-platform",
-  "version": "2.0.0",
-  "description": "Secure quiz platform with real-time proctoring and analytics",
-  "scripts": {
-    "deploy": "clasp push",
-    "deploy:watch": "clasp push --watch",
-    "open": "clasp open",
-    "logs": "clasp logs",
-    "deploy:prod": "clasp push && clasp deploy --description 'Production deployment'",
-    "pull": "clasp pull",
-    "status": "clasp status"
-  },
-  "keywords": [
-    "quiz",
-    "assessment",
-    "proctoring",
-    "firebase",
-    "google-apps-script"
-  ],
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "@google/clasp": "^2.4.2"
-  }
+    "name": "secure-assessment-platform",
+    "private": true,
+    "version": "2.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "firebase": "^10.7.2",
+        "framer-motion": "^11.0.3",
+        "lucide-vue-next": "^0.320.0",
+        "vue": "^3.4.15",
+        "vue-router": "^4.6.4"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^5.0.3",
+        "autoprefixer": "^10.4.17",
+        "postcss": "^8.4.35",
+        "tailwindcss": "^3.4.1",
+        "typescript": "^5.2.2",
+        "vite": "^5.0.12",
+        "vite-plugin-singlefile": "^2.0.1",
+        "vue-tsc": "^1.8.27"
+    }
 }
