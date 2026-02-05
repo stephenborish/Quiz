@@ -103,7 +103,7 @@ function doGet(e) {
     // ----------------------------------------
     // STEP 4: Create and Serve Template
     // ----------------------------------------
-    const template = HtmlService.createTemplateFromFile('Index');
+    const template = HtmlService.createTemplateFromFile('index');
 
     // Generate auth token with error handling
     let authToken = '';
@@ -146,7 +146,8 @@ function doGet(e) {
   } catch (error) {
     console.error('[ERROR] doGet failed:', error.toString(), error.stack);
     return createErrorPage('Application Error',
-      'An unexpected error occurred. Please refresh and try again.');
+      'An unexpected error occurred. Please refresh and try again.',
+      error.toString() + '\n' + error.stack);
   }
 }
 
@@ -348,9 +349,10 @@ function clearAllAuthCache() {
  *
  * @param {string} title - Error title
  * @param {string} message - Error description
+ * @param {string} [debugInfo] - Optional technical details for debugging
  * @returns {HtmlOutput} Styled error page
  */
-function createErrorPage(title, message) {
+function createErrorPage(title, message, debugInfo) {
   const errorHtml = `
     <!DOCTYPE html>
     <html lang="en">
@@ -362,23 +364,25 @@ function createErrorPage(title, message) {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
           min-height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #fff;
+          color: #1e293b;
           padding: 20px;
         }
         .error-container {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
           border-radius: 20px;
           padding: 50px 40px;
           text-align: center;
-          max-width: 500px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          max-width: 800px;
+          width: 90%;
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          box-shadow: 0 20px 60px rgba(148, 163, 184, 0.1);
         }
         .error-icon {
           font-size: 72px;
@@ -387,35 +391,53 @@ function createErrorPage(title, message) {
         h1 {
           font-size: 28px;
           margin-bottom: 15px;
-          color: #ff6b6b;
+          color: #ef4444;
+          font-weight: 800;
         }
         p {
           font-size: 16px;
           line-height: 1.7;
-          color: rgba(255, 255, 255, 0.8);
+          color: #475569;
           margin-bottom: 30px;
         }
+        .debug-info {
+          background: #f1f5f9;
+          padding: 15px;
+          border-radius: 8px;
+          text-align: left;
+          font-family: monospace;
+          font-size: 12px;
+          color: #ef4444;
+          white-space: pre-wrap;
+          margin-bottom: 30px;
+          overflow-x: auto;
+          max-height: 300px;
+          overflow-y: auto;
+          border-left: 3px solid #ef4444;
+        }
         .btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: #2563eb;
           color: white;
           border: none;
           padding: 14px 35px;
-          border-radius: 30px;
+          border-radius: 12px;
           font-size: 16px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           text-decoration: none;
           display: inline-block;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
         }
         .btn:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+          transform: translateY(-2px);
+          background: #1d4ed8;
+          box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
         }
         .support {
           margin-top: 25px;
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.5);
+          color: #94a3b8;
         }
       </style>
     </head>
@@ -424,6 +446,7 @@ function createErrorPage(title, message) {
         <div class="error-icon">⚠️</div>
         <h1>${title}</h1>
         <p>${message}</p>
+        ${debugInfo ? `<div class="debug-info">${debugInfo}</div>` : ''}
         <button class="btn" onclick="location.reload()">Try Again</button>
         <div class="support">
           Need help? Contact your system administrator.

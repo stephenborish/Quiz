@@ -21,17 +21,17 @@ const navigate = (item: any) => {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-slate-950">
+  <div class="flex h-screen overflow-hidden bg-slate-50">
     <!-- Sidebar -->
-    <aside class="w-72 border-r border-white/5 bg-slate-900/50 backdrop-blur-3xl flex flex-col">
+    <aside class="w-72 border-r border-slate-200 bg-white flex flex-col items-stretch">
       <div class="p-8">
         <div class="flex items-center gap-3 mb-10">
-          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <span class="text-xl font-black text-white">V</span>
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white">
+            <span class="text-xl font-black">V</span>
           </div>
           <div>
-            <h1 class="text-xl font-black text-white tracking-tighter uppercase">Veritas</h1>
-            <p class="text-[9px] font-black text-indigo-400 tracking-[0.2em] uppercase">Teacher Edition</p>
+            <h1 class="text-xl font-black text-slate-900 tracking-tighter uppercase">Veritas</h1>
+            <p class="text-[9px] font-black text-indigo-600 tracking-[0.2em] uppercase">Teacher Edition</p>
           </div>
         </div>
 
@@ -42,7 +42,7 @@ const navigate = (item: any) => {
             @click="navigate(item)"
             class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group"
             :class="[
-              activeTab === item.id ? 'bg-indigo-600/10 text-white border border-indigo-500/20 shadow-lg shadow-indigo-500/5' : 'text-slate-400 hover:text-white hover:bg-white/5'
+              activeTab === item.id ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
             ]"
           >
             <component :is="item.icon" :size="20" class="transition-transform group-hover:scale-110" />
@@ -51,11 +51,11 @@ const navigate = (item: any) => {
         </nav>
       </div>
 
-      <div class="mt-auto p-8 border-t border-white/5 space-y-2">
-        <button class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-400 hover:text-white hover:bg-white/5 transition-all uppercase tracking-widest font-bold text-[10px]">
+      <div class="mt-auto p-8 border-t border-slate-200 space-y-2">
+        <button class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all uppercase tracking-widest font-bold text-[10px]">
           <Settings :size="16" /> Account Security
         </button>
-        <button class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-red-400 hover:bg-red-500/10 transition-all uppercase tracking-widest font-bold text-[10px]">
+        <button class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-red-500 hover:bg-red-50 hover:text-red-700 transition-all uppercase tracking-widest font-bold text-[10px]">
           <LogOut :size="16" /> Terminate Session
         </button>
       </div>
@@ -64,17 +64,17 @@ const navigate = (item: any) => {
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto relative custom-scrollbar">
       <!-- Top header -->
-      <header class="sticky top-0 z-30 px-12 py-6 bg-slate-950/80 backdrop-blur-md border-b border-white/5 flex justify-between items-center">
+      <header class="sticky top-0 z-30 px-12 py-6 bg-white/80 backdrop-blur-md border-b border-slate-200 flex justify-between items-center">
         <div>
-          <h2 class="text-2xl font-black text-white tracking-tight uppercase">Dashboard Overview</h2>
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Real-time synchronization active</p>
+          <h2 class="text-2xl font-black text-slate-900 tracking-tight uppercase">Dashboard Overview</h2>
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Real-time synchronization active</p>
         </div>
         <div class="flex items-center gap-6">
           <div class="text-right">
-            <p class="text-xs font-black text-white uppercase tracking-widest">Faculty Member</p>
-            <p class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Authorized Access</p>
+            <p class="text-xs font-black text-slate-900 uppercase tracking-widest">Faculty Member</p>
+            <p class="text-[9px] font-bold text-indigo-600 uppercase tracking-widest">Authorized Access</p>
           </div>
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 border border-white/20 shadow-xl overflow-hidden shadow-indigo-500/10">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 border border-white/20 shadow-xl overflow-hidden shadow-indigo-500/20">
             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher" alt="Avatar" />
           </div>
         </div>

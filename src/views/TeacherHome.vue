@@ -17,12 +17,12 @@ const stats = [
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
       <GlassCard v-for="stat in stats" :key="stat.label">
         <div class="flex items-center gap-6">
-          <div class="p-4 rounded-2xl bg-white/5 border border-white/10" :class="stat.color">
+          <div class="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm" :class="stat.color">
             <component :is="stat.icon" :size="24" />
           </div>
           <div>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ stat.label }}</p>
-            <p class="text-3xl font-black text-white tracking-tight">{{ stat.value }}</p>
+            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">{{ stat.label }}</p>
+            <p class="text-3xl font-black text-slate-900 tracking-tight">{{ stat.value }}</p>
           </div>
         </div>
       </GlassCard>
@@ -38,17 +38,17 @@ const stats = [
           
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
             <!-- Mock Student Tiles -->
-            <div v-for="i in 8" :key="i" class="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
+            <div v-for="i in 8" :key="i" class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-indigo-500/30 transition-all group relative overflow-hidden shadow-sm">
                <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500/50"></div>
                <div class="flex justify-between items-start mb-4">
-                  <div class="w-8 h-8 rounded-full bg-slate-800 border border-white/10 overflow-hidden">
+                  <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
                     <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`" alt="Avatar" />
                   </div>
-                  <span class="text-[8px] font-black px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 uppercase tracking-tighter">Active</span>
+                  <span class="text-[8px] font-black px-2 py-1 rounded bg-emerald-500/10 text-emerald-600 uppercase tracking-tighter">Active</span>
                </div>
-               <p class="text-[10px] font-black text-white truncate uppercase tracking-widest">Student {{ i }}</p>
+               <p class="text-[10px] font-black text-slate-900 truncate uppercase tracking-widest">Student {{ i }}</p>
                <div class="flex items-center justify-between mt-4">
-                 <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                 <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
                     <div class="bg-indigo-500 h-full" :style="{ width: Math.random() * 100 + '%' }"></div>
                  </div>
                  <span class="text-[8px] font-bold text-slate-500 ml-2">Q{{ Math.floor(Math.random() * 10) }}</span>
@@ -61,11 +61,11 @@ const stats = [
       <div class="space-y-8">
         <GlassCard title="Security Events" subtitle="Sub-second integrity logs">
            <div class="space-y-4">
-             <div v-for="i in 3" :key="i" class="flex gap-4 p-4 rounded-2xl bg-red-500/5 border border-red-500/10">
+             <div v-for="i in 3" :key="i" class="flex gap-4 p-4 rounded-2xl bg-red-50 border border-red-100">
                 <AlertTriangle :size="16" class="text-red-500 shrink-0" />
                 <div>
-                   <p class="text-[10px] font-black text-white uppercase tracking-tight">Focus Lost (Tab-Switch)</p>
-                   <p class="text-[9px] font-bold text-red-400 mt-1 uppercase tracking-widest">Student {{ i + 2 }} • Blocked 2m ago</p>
+                   <p class="text-[10px] font-black text-slate-900 uppercase tracking-tight">Focus Lost (Tab-Switch)</p>
+                   <p class="text-[9px] font-bold text-red-600 mt-1 uppercase tracking-widest">Student {{ i + 2 }} • Blocked 2m ago</p>
                 </div>
              </div>
            </div>

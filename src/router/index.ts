@@ -24,6 +24,11 @@ const routes = [
                 component: () => import('../views/QuizManager.vue')
             },
             {
+                path: 'quizzes/:id/edit',
+                name: 'QuizEditor',
+                component: () => import('../views/QuizEditor.vue')
+            },
+            {
                 path: 'roster',
                 name: 'RosterManager',
                 component: () => import('../views/RosterManager.vue')
