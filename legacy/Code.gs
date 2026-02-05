@@ -103,7 +103,7 @@ function doGet(e) {
     // ----------------------------------------
     // STEP 4: Create and Serve Template
     // ----------------------------------------
-    const template = HtmlService.createTemplateFromFile('Index');
+    const template = HtmlService.createTemplateFromFile('index');
 
     // Generate auth token with error handling
     let authToken = '';
