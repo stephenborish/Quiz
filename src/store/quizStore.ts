@@ -51,8 +51,11 @@ export const useQuizStore = () => {
             }
 
             const quizRef = doc(db, 'quizzes', state.activeQuiz.id);
+            // Sanitize ONLY the quiz data to remove Vue proxies/undefined
+            const quizData = JSON.parse(JSON.stringify(state.activeQuiz));
+
             const payload = {
-                ...state.activeQuiz,
+                ...quizData,
                 updatedAt: serverTimestamp(),
                 authorEmail: mainStore.state.user.email
             };
@@ -62,10 +65,7 @@ export const useQuizStore = () => {
                 payload.createdAt = serverTimestamp();
             }
 
-            // Sanitize undefined values for Firestore
-            const sanitize = (obj: any) => JSON.parse(JSON.stringify(obj));
-
-            await setDoc(quizRef, sanitize(payload), { merge: true });
+            await setDoc(quizRef, payload, { merge: true });
 
             state.lastSaved = new Date();
             console.log('Quiz saved successfully:', state.activeQuiz.id);
