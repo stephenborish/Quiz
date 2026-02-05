@@ -41,5 +41,18 @@ export const useStore = () => {
         isTeacher: computed(() => state.user.role === 'TEACHER'),
         isStudent: computed(() => state.user.role === 'STUDENT'),
         setLoading: (val: boolean) => (state.isLoading = val),
+        initializeAuth: async () => {
+            if (initialAppState?.authToken) {
+                try {
+                    const { auth } = await import('../firebase');
+                    const { signInWithCustomToken } = await import('firebase/auth');
+                    await signInWithCustomToken(auth, initialAppState.authToken);
+                    console.log('Firebase Auth initialized via custom token');
+                    state.user.isAuthenticated = true;
+                } catch (e) {
+                    console.error('Auth initialization failed', e);
+                }
+            }
+        }
     };
 };

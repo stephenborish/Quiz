@@ -1,3 +1,4 @@
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import GlassCard from '../components/ui/GlassCard.vue'
@@ -19,8 +20,10 @@ const createQuiz = () => {
     router.push({ name: 'QuizEditor', params: { id: newId } })
 }
 
+</script>
+
 <template>
-  <div class="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+  <div class="space-y-12">
     <div class="flex justify-between items-end">
       <div>
         <h2 class="text-3xl font-black text-slate-900 tracking-tight uppercase">Curriculum Inventory</h2>
@@ -56,7 +59,7 @@ const createQuiz = () => {
              <LayoutGrid :size="14" class="text-slate-500" />
              <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ quiz.questions }} Questions</span>
            </div>
-           <PremiumButton size="sm" variant="secondary">Launch Editor</PremiumButton>
+           <PremiumButton size="sm" variant="secondary" @click="router.push({ name: 'QuizEditor', params: { id: quiz.id } })">Launch Editor</PremiumButton>
         </div>
       </GlassCard>
     </div>

@@ -1,121 +1,152 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import GlassCard from '../components/ui/GlassCard.vue'
 import PremiumButton from '../components/ui/PremiumButton.vue'
-import { ShieldCheck, Loader2 } from 'lucide-vue-next'
+import { ShieldCheck, Loader2, ArrowRight, CheckCircle2 } from 'lucide-vue-next'
+import { useStudentStore } from '../store/studentStore'
 
-const isInitializing = ref(false)
-const currentQuestionIndex = ref(0)
-const selectedAnswer = ref<string | null>(null)
+const studentStore = useStudentStore()
+const { state: studentState } = studentStore
+
+const sessionCode = ref('')
+const studentName = ref('')
 const showMetacognition = ref(false)
+const tempSelection = ref<string | null>(null)
 
-const question = {
-  text: 'Find the derivative of f(x) = e^(2x) * cos(x).',
-  imageUrl: null,
-  options: [
-    { id: 'a', text: 'e^(2x) (2 cos x - sin x)' },
-    { id: 'b', text: 'e^(2x) (cos x - 2 sin x)' },
-    { id: 'c', text: '2e^(2x) cos x' },
-    { id: 'd', text: '-e^(2x) sin x' },
-  ]
+const handleJoin = async () => {
+    if (!sessionCode.value || !studentName.value) return
+    await studentStore.joinSession(sessionCode.value, studentName.value)
 }
 
-const handleSelect = (id: string) => {
-  selectedAnswer.value = id
-  showMetacognition.value = true
+const selectOption = (optId: string) => {
+    tempSelection.value = optId
+    showMetacognition.value = true
+}
+
+const confirmAnswer = (confidence: number) => {
+    if (tempSelection.value && studentStore.activeQuestion.value) {
+        studentStore.submitAnswer(studentStore.activeQuestion.value.id, tempSelection.value, confidence)
+        showMetacognition.value = false
+        tempSelection.value = null
+    }
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-    <!-- Security Mesh Gradient -->
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.05),transparent_50%)]"></div>
+  <div class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans text-slate-900">
     
-    <!-- Top Progress Bar -->
-    <div class="fixed top-0 left-0 w-full h-1 bg-white/5 z-50">
-       <div class="h-full bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all duration-1000" style="width: 35%;"></div>
+    <!-- IDLE / JOIN SCREEN -->
+    <div v-if="studentState.status === 'IDLE' || studentState.status === 'JOINING'" class="max-w-md w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Veritas Live</h1>
+            <p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Secure Assessment Environment</p>
+        </div>
+
+        <GlassCard>
+            <div class="space-y-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Session Code</label>
+                    <input 
+                        v-model="sessionCode" 
+                        type="text" 
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-center text-2xl font-black text-slate-900 placeholder:text-slate-300 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all uppercase"
+                        placeholder="CODE"
+                    />
+                </div>
+                 <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Full Name</label>
+                    <input 
+                         v-model="studentName"
+                        type="text" 
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-lg font-bold text-slate-900 placeholder:text-slate-300 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                        placeholder="Your Name"
+                    />
+                </div>
+                <PremiumButton 
+                    class="w-full py-4 text-lg" 
+                    @click="handleJoin"
+                    :disabled="!sessionCode || !studentName || studentState.status === 'JOINING'"
+                >
+                    <Loader2 v-if="studentState.status === 'JOINING'" class="animate-spin mr-2" />
+                    {{ studentState.status === 'JOINING' ? 'Connecting...' : 'Join Session' }}
+                </PremiumButton>
+            </div>
+        </GlassCard>
     </div>
 
-    <!-- Initialization Screen -->
-    <div v-if="isInitializing" class="text-center space-y-8 animate-in fade-in duration-1000">
-       <div class="relative w-24 h-24 mx-auto">
-          <Loader2 :size="96" class="text-indigo-500 animate-spin opacity-20" />
-          <ShieldCheck :size="48" class="text-indigo-500 absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" />
-       </div>
-       <h2 class="text-2xl font-black text-white tracking-widest uppercase">Securing Session...</h2>
-       <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.4em]">Veritas High-Performance Environment</p>
+    <!-- SUBMITTED SCREEN -->
+    <div v-else-if="studentState.status === 'SUBMITTED'" class="text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+         <div class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+             <CheckCircle2 :size="48" />
+         </div>
+         <h2 class="text-3xl font-black text-slate-900">Assessment Complete</h2>
+         <p class="text-slate-500 font-medium">Your responses have been securely recorded.</p>
+         <PremiumButton variant="secondary" @click="studentState.status = 'IDLE'">Return Home</PremiumButton>
     </div>
 
-    <!-- Active Assessment -->
-    <div v-else class="max-w-4xl w-full space-y-12 animate-in fade-in slide-in-from-bottom-12 duration-700 relative z-10">
-       <header class="flex justify-between items-end border-b border-white/5 pb-8">
+    <!-- ACTIVE QUIZ -->
+    <div v-else class="max-w-3xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500 relative z-10 pb-32">
+       
+       <!-- Header -->
+       <header class="flex justify-between items-end border-b border-slate-200 pb-6">
           <div>
-            <h1 class="text-xs font-black text-indigo-400 uppercase tracking-[0.3em] mb-2">Assessment in Progress</h1>
-            <p class="text-4xl font-black text-white tracking-tighter uppercase tabular-nums">Question {{ Number(currentQuestionIndex) + 1 }} of 12</p>
+            <h1 class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-2">{{ studentState.quizData?.title }}</h1>
+            <p class="text-3xl font-black text-slate-900 tracking-tight uppercase tabular-nums">Question {{ studentState.currentQuestionIndex + 1 }} <span class="text-slate-300 text-xl align-top">/ {{ studentStore.totalQuestions.value }}</span></p>
           </div>
           <div class="text-right">
-             <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Time Elapsed</p>
-             <p class="text-xl font-mono text-white">04:12</p>
+             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+             <div class="flex items-center gap-2 text-emerald-500 font-bold text-xs uppercase tracking-wider">
+                 <span class="relative flex h-2 w-2">
+                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                   <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                 </span>
+                 Live
+             </div>
           </div>
        </header>
 
-       <section class="space-y-12">
-          <!-- Question Content -->
-          <div class="text-3xl font-bold text-white leading-tight">
-             {{ question.text }}
+       <!-- Content -->
+       <section class="space-y-8" v-if="studentStore.activeQuestion.value">
+          <div class="text-2xl font-bold text-slate-800 leading-relaxed">
+             {{ studentStore.activeQuestion.value.text }}
           </div>
 
-          <!-- Question Image Placeholder if any -->
-          <div v-if="question.imageUrl" class="rounded-[2.5rem] overflow-hidden border border-white/10 aspect-video bg-white/5">
-             <img :src="question.imageUrl" class="w-full h-full object-contain" />
+          <div v-if="studentStore.activeQuestion.value.imageUrl" class="rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-white">
+             <img :src="studentStore.activeQuestion.value.imageUrl" class="w-full max-h-[400px] object-contain" />
           </div>
 
-          <!-- Options Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
              <button 
-               v-for="(opt, idx) in question.options" 
+               v-for="(opt, idx) in studentStore.activeQuestion.value.options" 
                :key="opt.id"
-               @click="handleSelect(opt.id)"
-               class="p-8 rounded-[2rem] border transition-all duration-300 flex items-center gap-6 group relative overflow-hidden text-left"
-               :class="[
-                 selectedAnswer === opt.id ? 'bg-indigo-600 border-indigo-400 shadow-2xl shadow-indigo-500/40 scale-[1.02]' : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'
-               ]"
+               @click="selectOption(opt.id)"
+               class="p-6 rounded-2xl border transition-all duration-200 flex items-center gap-4 group text-left hover:border-indigo-300 hover:shadow-md hover:scale-[1.01] bg-white border-slate-200"
              >
-                <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center font-black text-xl transition-all group-hover:bg-white/20">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-lg text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                    {{ String.fromCharCode(65 + idx) }}
                 </div>
-                <span class="text-lg font-bold" :class="selectedAnswer === opt.id ? 'text-white' : 'text-slate-300'">{{ opt.text }}</span>
+                <span class="text-lg font-bold text-slate-700 group-hover:text-slate-900">{{ opt.text }}</span>
              </button>
           </div>
        </section>
-
-       <footer class="flex justify-center pt-8">
-          <p class="text-[9px] font-black text-slate-600 uppercase tracking-[0.5em] flex items-center gap-4">
-             <ShieldCheck :size="12" /> Active Proctoring Guard Persistent
-          </p>
-       </footer>
     </div>
 
     <!-- Metacognition Overlay -->
-    <div v-if="showMetacognition" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-2xl animate-in fade-in duration-300">
-       <div class="max-w-md w-full">
-          <GlassCard title="Metacognitive Anchor" subtitle="Calibrate your confidence level" class="shadow-[0_0_100px_rgba(99,102,241,0.2)]">
-             <div class="space-y-10 mt-6">
-                <p class="text-sm font-medium text-slate-300 text-center px-4">How certain are you that your response to the previous prompt is mathematically sound?</p>
-                
-                <div class="grid grid-cols-3 gap-4">
-                   <button v-for="i in 3" :key="i" class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all flex flex-col items-center gap-4 group">
-                      <div class="text-2xl">{{ ['😕', '🤔', '🔥'][i-1] }}</div>
-                      <span class="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-white">{{ ['Low', 'Mid', 'High'][i-1] }} Confidence</span>
-                   </button>
-                </div>
-
-                <div class="flex flex-col gap-4 mt-8">
-                   <PremiumButton @click="showMetacognition = false" class="w-full">Anchor Response & Continue</PremiumButton>
-                   <PremiumButton variant="ghost" @click="showMetacognition = false" class="w-full">Revise Selection</PremiumButton>
-                </div>
+    <div v-if="showMetacognition" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
+       <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border border-white/50 animate-in zoom-in-95 duration-200">
+             <div class="text-center mb-8">
+                 <h3 class="text-xl font-black text-slate-900 mb-2">Confidence Check</h3>
+                 <p class="text-sm font-medium text-slate-500">How certain are you about this answer?</p>
              </div>
-          </GlassCard>
+             
+             <div class="grid grid-cols-3 gap-3 mb-8">
+                <button v-for="i in 3" :key="i" @click="confirmAnswer(i)" class="p-4 rounded-xl bg-slate-50 border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all flex flex-col items-center gap-2 group">
+                   <div class="text-2xl group-hover:scale-110 transition-transform">{{ ['😕', '🤔', '🔥'][i-1] }}</div>
+                   <span class="text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-indigo-600">{{ ['Unsure', 'Likely', 'Certain'][i-1] }}</span>
+                </button>
+             </div>
+
+             <PremiumButton variant="ghost" @click="showMetacognition = false" class="w-full">Cancel</PremiumButton>
        </div>
     </div>
   </div>

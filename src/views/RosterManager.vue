@@ -14,8 +14,8 @@ const rosters = ref([
   <div class="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
     <div class="flex justify-between items-end">
       <div>
-        <h2 class="text-3xl font-black text-white tracking-tight uppercase">Directory Governance</h2>
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Manage student enrollment and block synchronization</p>
+        <h2 class="text-3xl font-black text-slate-900 tracking-tight uppercase">Directory Governance</h2>
+        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Manage student enrollment and block synchronization</p>
       </div>
       <div class="flex gap-4">
         <PremiumButton variant="secondary">
@@ -35,32 +35,32 @@ const rosters = ref([
         
         <div class="overflow-x-auto">
           <table class="w-full text-left">
-            <thead class="bg-white/5 text-[9px] font-black text-slate-500 uppercase tracking-widest">
+            <thead class="bg-slate-50 text-[9px] font-black text-slate-500 uppercase tracking-widest">
               <tr>
                 <th class="px-8 py-4">Student Identity</th>
                 <th class="px-8 py-4">Authentication</th>
                 <th class="px-8 py-4">Performance</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/5">
-              <tr v-for="i in 5" :key="i" class="group hover:bg-white/5 transition-colors">
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="i in 5" :key="i" class="group hover:bg-slate-50 transition-colors">
                 <td class="px-8 py-6">
                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold">{{ i }}</div>
-                      <span class="text-xs font-black text-white uppercase tracking-tight">Student Name {{ i }}</span>
+                      <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">{{ i }}</div>
+                      <span class="text-xs font-black text-slate-900 uppercase tracking-tight">Student Name {{ i }}</span>
                    </div>
                 </td>
                 <td class="px-8 py-6">
-                   <span class="text-[10px] font-mono text-slate-400">student{{ i }}@school.edu</span>
+                   <span class="text-[10px] font-mono text-slate-500">student{{ i }}@school.edu</span>
                 </td>
                 <td class="px-8 py-6 text-right">
-                   <span class="text-[10px] font-black text-indigo-400 tracking-widest">88.4%</span>
+                   <span class="text-[10px] font-black text-indigo-600 tracking-widest">88.4%</span>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div class="p-6 text-center border-t border-white/5">
-             <button class="text-[9px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors">View All 28 Students</button>
+          <div class="p-6 text-center border-t border-slate-100">
+             <button class="text-[9px] font-black text-slate-500 hover:text-slate-900 uppercase tracking-widest transition-colors">View All 28 Students</button>
           </div>
         </div>
       </GlassCard>

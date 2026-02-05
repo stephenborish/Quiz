@@ -20,10 +20,10 @@ withDefaults(defineProps<Props>(), {
       size === 'sm' ? 'px-4 py-2 text-[10px] rounded-xl' : '',
       size === 'md' ? 'px-6 py-3 text-xs rounded-2xl' : '',
       size === 'lg' ? 'px-10 py-4 text-sm rounded-[1.5rem]' : '',
-      variant === 'primary' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 hover:shadow-indigo-500/40' : '',
-      variant === 'secondary' ? 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 hover:text-white' : '',
-      variant === 'danger' ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white' : '',
-      variant === 'ghost' ? 'text-slate-400 hover:text-white hover:bg-white/5' : '',
+      variant === 'primary' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 hover:shadow-indigo-500/30' : '',
+      variant === 'secondary' ? 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-sm' : '',
+      variant === 'danger' ? 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100' : '',
+      variant === 'ghost' ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : '',
     ]"
   >
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-inherit">

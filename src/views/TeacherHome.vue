@@ -1,14 +1,31 @@
 <script setup lang="ts">
+import { computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import GlassCard from '../components/ui/GlassCard.vue'
 import PremiumButton from '../components/ui/PremiumButton.vue'
 import { Play, Users, Clock, AlertTriangle } from 'lucide-vue-next'
+import { useProctoringStore } from '../store/proctoringStore'
 
-const stats = [
-  { label: 'Active Sessions', value: '4', icon: Play, color: 'text-emerald-500' },
+const router = useRouter()
+const proctoringStore = useProctoringStore()
+const { state: proctoringState } = proctoringStore
+
+// Mock monitoring for demo purposes if no active quiz
+// In production, this would be triggered by a "live" quiz context
+onMounted(() => {
+    // proctoringStore.startMonitoring('demo-quiz-id')
+})
+
+onUnmounted(() => {
+    proctoringStore.stopMonitoring()
+})
+
+const stats = computed(() => [
+  { label: 'Active Sessions', value: proctoringState.activeSessions.length.toString(), icon: Play, color: 'text-emerald-500' },
   { label: 'Total Students', value: '124', icon: Users, color: 'text-indigo-500' },
   { label: 'Avg. Latency', value: '142ms', icon: Clock, color: 'text-blue-500' },
-  { label: 'Integrity Alerts', value: '2', icon: AlertTriangle, color: 'text-red-500' },
-]
+  { label: 'Integrity Alerts', value: proctoringState.activeSessions.filter(s => s.integrityAlerts > 0).length.toString(), icon: AlertTriangle, color: 'text-red-500' },
+])
 </script>
 
 <template>
@@ -36,22 +53,32 @@ const stats = [
             <PremiumButton size="sm" variant="secondary">Global Control</PremiumButton>
           </template>
           
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-            <!-- Mock Student Tiles -->
-            <div v-for="i in 8" :key="i" class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-indigo-500/30 transition-all group relative overflow-hidden shadow-sm">
-               <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500/50"></div>
+          <div v-if="proctoringState.activeSessions.length === 0" class="p-12 text-center">
+             <p class="text-sm font-bold text-slate-400">No active sessions detected.</p>
+             <PremiumButton variant="ghost" size="sm" class="mt-4" @click="router.push('/teacher/quizzes')">Launch a Quiz</PremiumButton>
+          </div>
+
+          <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+            <!-- Student Tiles -->
+            <div v-for="student in proctoringState.activeSessions" :key="student.id" class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-indigo-500/30 transition-all group relative overflow-hidden shadow-sm">
+               <div class="absolute top-0 left-0 w-full h-1" :class="student.integrityAlerts > 0 ? 'bg-red-500' : 'bg-emerald-500/50'"></div>
                <div class="flex justify-between items-start mb-4">
                   <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
-                    <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`" alt="Avatar" />
+                    <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.id}`" alt="Avatar" />
                   </div>
-                  <span class="text-[8px] font-black px-2 py-1 rounded bg-emerald-500/10 text-emerald-600 uppercase tracking-tighter">Active</span>
+                  <span 
+                    class="text-[8px] font-black px-2 py-1 rounded uppercase tracking-tighter"
+                    :class="student.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 text-slate-500'"
+                  >
+                    {{ student.status }}
+                  </span>
                </div>
-               <p class="text-[10px] font-black text-slate-900 truncate uppercase tracking-widest">Student {{ i }}</p>
+               <p class="text-[10px] font-black text-slate-900 truncate uppercase tracking-widest">{{ student.name || student.email }}</p>
                <div class="flex items-center justify-between mt-4">
                  <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                    <div class="bg-indigo-500 h-full" :style="{ width: Math.random() * 100 + '%' }"></div>
+                    <div class="bg-indigo-500 h-full" :style="{ width: student.progress + '%' }"></div>
                  </div>
-                 <span class="text-[8px] font-bold text-slate-500 ml-2">Q{{ Math.floor(Math.random() * 10) }}</span>
+                 <span class="text-[8px] font-bold text-slate-500 ml-2">Q{{ student.currentQuestion }}</span>
                </div>
             </div>
           </div>
@@ -73,8 +100,8 @@ const stats = [
 
         <GlassCard title="Quick Actions">
            <div class="grid grid-cols-2 gap-4">
-             <PremiumButton size="sm" class="flex-1">Deploy New Quiz</PremiumButton>
-             <PremiumButton size="sm" variant="secondary" class="flex-1">Sync Rosters</PremiumButton>
+             <PremiumButton size="sm" class="flex-1" @click="router.push('/teacher/quizzes')">Deploy New Quiz</PremiumButton>
+             <PremiumButton size="sm" variant="secondary" class="flex-1" @click="router.push('/teacher/roster')">Sync Rosters</PremiumButton>
              <PremiumButton size="sm" variant="ghost" class="col-span-2">System Audit Report</PremiumButton>
            </div>
         </GlassCard>
