@@ -54,6 +54,15 @@ if (fs.existsSync(appsscriptJsonPath)) {
     console.warn('Warning: legacy/appsscript.json not found. You may need to create it or `clasp clone`.');
 }
 
+// 4. Copy .clasp.json from legacy
+const claspJsonPath = path.join(LEGACY_DIR, '.clasp.json');
+if (fs.existsSync(claspJsonPath)) {
+    fs.copyFileSync(claspJsonPath, path.join(DIST_DIR, '.clasp.json'));
+    console.log('✓ Copied .clasp.json to dist/.clasp.json');
+} else {
+    console.warn('Warning: legacy/.clasp.json not found. Clasp commands may fail.');
+}
+
 console.log('--------------------------------------------------');
 console.log('Deployment preparation complete.');
 console.log('To deploy, run:');

@@ -146,7 +146,8 @@ function doGet(e) {
   } catch (error) {
     console.error('[ERROR] doGet failed:', error.toString(), error.stack);
     return createErrorPage('Application Error',
-      'An unexpected error occurred. Please refresh and try again.');
+      'An unexpected error occurred. Please refresh and try again.',
+      error.toString() + '\n' + error.stack);
   }
 }
 
@@ -348,9 +349,10 @@ function clearAllAuthCache() {
  *
  * @param {string} title - Error title
  * @param {string} message - Error description
+ * @param {string} [debugInfo] - Optional technical details for debugging
  * @returns {HtmlOutput} Styled error page
  */
-function createErrorPage(title, message) {
+function createErrorPage(title, message, debugInfo) {
   const errorHtml = `
     <!DOCTYPE html>
     <html lang="en">
@@ -376,7 +378,8 @@ function createErrorPage(title, message) {
           border-radius: 20px;
           padding: 50px 40px;
           text-align: center;
-          max-width: 500px;
+          max-width: 800px;
+          width: 90%;
           border: 1px solid rgba(255, 255, 255, 0.2);
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
@@ -394,6 +397,21 @@ function createErrorPage(title, message) {
           line-height: 1.7;
           color: rgba(255, 255, 255, 0.8);
           margin-bottom: 30px;
+        }
+        .debug-info {
+          background: rgba(0, 0, 0, 0.3);
+          padding: 15px;
+          border-radius: 8px;
+          text-align: left;
+          font-family: monospace;
+          font-size: 12px;
+          color: #ff6b6b;
+          white-space: pre-wrap;
+          margin-bottom: 30px;
+          overflow-x: auto;
+          max-height: 300px;
+          overflow-y: auto;
+          border-left: 3px solid #ff6b6b;
         }
         .btn {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -424,6 +442,7 @@ function createErrorPage(title, message) {
         <div class="error-icon">⚠️</div>
         <h1>${title}</h1>
         <p>${message}</p>
+        ${debugInfo ? `<div class="debug-info">${debugInfo}</div>` : ''}
         <button class="btn" onclick="location.reload()">Try Again</button>
         <div class="support">
           Need help? Contact your system administrator.
