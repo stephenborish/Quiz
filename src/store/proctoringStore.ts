@@ -7,7 +7,7 @@ export interface StudentSession {
     id: string; // Student ID or Email
     name: string;
     email: string;
-    status: 'ACTIVE' | 'IDLE' | 'DISCONNECTED';
+    status: 'active' | 'idle' | 'disconnected' | 'blocked' | 'completed';
     progress: number; // 0-100
     currentQuestion: number;
     lastActive: any;
@@ -31,20 +31,17 @@ export const useProctoringStore = () => {
         if (state.unsubscribe) state.unsubscribe();
         state.isLoading = true;
 
-        // In a real app, we'd query a 'sessions' collection for this quiz
-        // For now, let's mock the subscription or set up a real one if the collection exists
-        // Assuming structure: quizzes/{quizId}/sessions/{sessionId}
-
+        // Path: sessions/{quizId}/students
         try {
-            const sessionsRef = collection(db, `quizzes/${quizId}/sessions`);
-            // Sort by name or join time
+            const sessionsRef = collection(db, 'sessions', quizId, 'students');
+            // Sort by lastActive desc
             const q = query(sessionsRef, orderBy('lastActive', 'desc'));
 
             state.unsubscribe = onSnapshot(q, (snapshot) => {
                 state.activeSessions = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
-                } as StudentSession));
+                } as unknown as StudentSession));
                 state.isLoading = false;
             }, (error) => {
                 console.error("Proctoring subscription error:", error);
