@@ -28,6 +28,18 @@ const state = reactive<StudentState>({
 export const useStudentStore = () => {
     const mainStore = useStore();
 
+    const getSessionRef = () => {
+        if (!state.quizId || !state.sessionId) throw new Error('No active session');
+        // Path: sessions/{quizId}/students/{email}
+        return doc(db, 'sessions', state.quizId, 'students', state.sessionId);
+    };
+
+    const getResponseRef = () => {
+        if (!state.quizId || !state.sessionId) throw new Error('No active session');
+        // Path: responses/{quizId}/students/{email}
+        return doc(db, 'responses', state.quizId, 'students', state.sessionId);
+    };
+
     const joinSession = async (code: string, name: string) => {
         state.status = 'JOINING';
         try {
@@ -35,7 +47,7 @@ export const useStudentStore = () => {
 
             // Allow joining 'DEMO'
             if (code.toUpperCase() === 'DEMO') {
-                state.sessionId = 'demo_session_' + Date.now();
+                state.sessionId = 'demo_user';
                 state.quizData = {
                     title: 'Calculus Demo (Mock)',
                     questions: [
@@ -57,6 +69,18 @@ export const useStudentStore = () => {
             }
 
             // Real Firestore Logic
+            const email = mainStore.state.user.email;
+            if (!email) {
+                 // Fallback for dev/testing if not authenticated via GAS
+                 console.warn('No user email found. Are you authenticated?');
+                 if (import.meta.env.DEV) {
+                     // Allow dev without email if strictly testing locally?
+                     // But rules require email. So this will fail.
+                     throw new Error('Authentication required. Please refresh.');
+                 }
+                 throw new Error('Authentication required. Please refresh.');
+            }
+
             const quizRef = doc(db, 'quizzes', code);
             const quizSnap = await getDoc(quizRef);
 
@@ -65,7 +89,7 @@ export const useStudentStore = () => {
             }
 
             state.quizId = code;
-            state.sessionId = crypto.randomUUID();
+            state.sessionId = email; // Use email as session ID
 
             // 1. Listen to Quiz Updates
             onSnapshot(quizRef, (doc) => {
@@ -90,23 +114,30 @@ export const useStudentStore = () => {
     const registerSession = async () => {
         if (!state.quizId || !state.sessionId) return;
 
-        const sessionRef = doc(db, `quizzes/${state.quizId}/sessions`, state.sessionId);
+        // Skip for demo
+        if (state.sessionId === 'demo_user') return;
+
+        const sessionRef = getSessionRef();
         await setDoc(sessionRef, {
-            id: state.sessionId,
-            name: state.studentName,
-            status: 'ACTIVE',
+            email: state.sessionId, // ID is email
+            displayName: state.studentName,
+            status: 'active', // Lowercase to match rules? Rules check 'active'
             progress: 0,
             currentQuestion: 1,
             lastActive: serverTimestamp(),
+            connectedAt: serverTimestamp(),
             integrityAlerts: 0
-        });
+        }, { merge: true });
     };
 
     const updateProgress = async () => {
         if (!state.quizId || !state.sessionId) return;
 
+        // Skip for demo
+        if (state.sessionId === 'demo_user') return;
+
         const progress = state.quizData ? Math.round(((state.currentQuestionIndex) / state.quizData.questions.length) * 100) : 0;
-        const sessionRef = doc(db, `quizzes/${state.quizId}/sessions`, state.sessionId);
+        const sessionRef = getSessionRef();
 
         await updateDoc(sessionRef, {
             progress: progress,
@@ -115,9 +146,40 @@ export const useStudentStore = () => {
         });
     }
 
+    const saveResponse = async () => {
+        if (!state.quizId || !state.sessionId) return;
+
+        // Skip for demo
+        if (state.sessionId === 'demo_user') return;
+
+        const responseRef = getResponseRef();
+
+        // Construct answers object for Firestore
+        // Format: answers: { [questionId]: { answer: string, confidence: number, ... } }
+        const answersPayload: Record<string, any> = {};
+        for (const [qId, ans] of Object.entries(state.answers)) {
+            answersPayload[qId] = {
+                answer: ans,
+                confidence: state.confidence[qId] || 1,
+                answeredAt: new Date() // Client timestamp, ideally serverTimestamp but inside map it's tricky
+            };
+        }
+
+        await setDoc(responseRef, {
+            email: state.sessionId,
+            quizId: state.quizId,
+            answers: answersPayload,
+            totalQuestions: state.quizData?.questions?.length || 0,
+            lastUpdated: serverTimestamp()
+        }, { merge: true });
+    };
+
     const submitAnswer = async (questionId: string, optionId: string, confidenceLvl: number) => {
         state.answers[questionId] = optionId;
         state.confidence[questionId] = confidenceLvl;
+
+        // Save progress to Firestore Response
+        await saveResponse();
 
         // Advance
         if (state.quizData && state.currentQuestionIndex < state.quizData.questions.length - 1) {
@@ -125,12 +187,19 @@ export const useStudentStore = () => {
             updateProgress(); // Fire and forget update
         } else {
             state.status = 'SUBMITTED';
-            if (state.quizId && state.sessionId) {
-                const sessionRef = doc(db, `quizzes/${state.quizId}/sessions`, state.sessionId);
+            // Only update Firestore if not demo
+            if (state.quizId && state.sessionId && state.sessionId !== 'demo_user') {
+                const sessionRef = getSessionRef();
                 await updateDoc(sessionRef, {
-                    status: 'SUBMITTED',
+                    status: 'completed', // Rules check 'completed' ? Rules check != 'blocked'
                     progress: 100,
                     lastActive: serverTimestamp()
+                });
+
+                // Finalize response
+                const responseRef = getResponseRef();
+                await updateDoc(responseRef, {
+                    completedAt: serverTimestamp()
                 });
             }
         }

@@ -1,5 +1,12 @@
 <script setup lang="ts">
-// Root App component
+import { onMounted } from 'vue'
+import { useStore } from './store'
+
+const store = useStore()
+
+onMounted(async () => {
+  await store.initializeAuth()
+})
 </script>
 
 <template>
