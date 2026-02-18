@@ -63,7 +63,33 @@ service cloud.firestore {
      * Checks if the user owns the document (email-based)
      */
     function isOwner(email) {
-      return isAuthenticated() && normalizedEmail() == email;
+      return isAuthenticated() && normalizedEmail() == email.lower();
+    }
+
+    function hasSessionShape(data) {
+      return data.keys().hasOnly([
+        'email',
+        'displayName',
+        'status',
+        'connectedAt',
+        'lastHeartbeat',
+        'violations',
+        'currentQuestion',
+        'progress',
+        'lastActive',
+        'integrityAlerts'
+      ]);
+    }
+
+    function hasResponseShape(data) {
+      return data.keys().hasOnly([
+        'email',
+        'quizId',
+        'answers',
+        'totalQuestions',
+        'lastUpdated',
+        'completedAt'
+      ]);
     }
 
     /**
@@ -268,14 +294,23 @@ service cloud.firestore {
                        isAuthenticated() &&
                        isQuizOpen(quizId) &&
                        isRostered(quizId, email) &&
+                       hasSessionShape(request.resource.data) &&
                        request.resource.data.email == normalizedEmail() &&
-                       request.resource.data.status == 'active';
+                       request.resource.data.status == 'active' &&
+                       request.resource.data.progress == 0 &&
+                       request.resource.data.currentQuestion == 1 &&
+                       request.resource.data.violations is list;
 
       allow update: if isOwner(email) &&
                        isAuthenticated() &&
                        isQuizOpen(quizId) &&
                        isRostered(quizId, email) &&
+                       hasSessionShape(request.resource.data) &&
                        request.resource.data.email == normalizedEmail() &&
+                       request.resource.data.email == resource.data.email &&
+                       request.resource.data.progress >= resource.data.progress &&
+                       request.resource.data.currentQuestion >= resource.data.currentQuestion &&
+                       request.resource.data.violations.size() >= resource.data.violations.size() &&
                        resource.data.status != 'blocked' &&
                        (request.resource.data.status == resource.data.status ||
                         request.resource.data.status == 'blocked' ||
@@ -335,16 +370,26 @@ service cloud.firestore {
                        isQuizOpen(quizId) &&
                        isRostered(quizId, email) &&
                        !isStudentBlocked(quizId, email) &&
+                       hasResponseShape(request.resource.data) &&
                        request.resource.data.email == normalizedEmail() &&
-                       request.resource.data.quizId == quizId;
+                       request.resource.data.quizId == quizId &&
+                       request.resource.data.answers is map;
 
       allow update: if isOwner(email) &&
                        isAuthenticated() &&
                        isQuizOpen(quizId) &&
                        isRostered(quizId, email) &&
                        !isStudentBlocked(quizId, email) &&
+                       hasResponseShape(request.resource.data) &&
                        request.resource.data.email == normalizedEmail() &&
-                       request.resource.data.quizId == quizId;
+                       request.resource.data.quizId == quizId &&
+                       request.resource.data.email == resource.data.email &&
+                       request.resource.data.quizId == resource.data.quizId &&
+                       request.resource.data.answers is map &&
+                       request.resource.data.answers.keys().hasAll(resource.data.answers.keys()) &&
+                       request.resource.data.totalQuestions == resource.data.totalQuestions &&
+                       resource.data.completedAt == null &&
+                       (request.resource.data.completedAt == null || request.resource.data.completedAt is timestamp);
     }
 
     match /courses/{courseId} {

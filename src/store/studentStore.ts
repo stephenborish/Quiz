@@ -25,6 +25,10 @@ const state = reactive<StudentState>({
     quizData: null
 });
 
+let joinInFlight: Promise<void> | null = null;
+let submitInFlight = false;
+let sessionRegistered = false;
+
 export const useStudentStore = () => {
     const mainStore = useStore();
 
@@ -41,6 +45,11 @@ export const useStudentStore = () => {
     };
 
     const joinSession = async (code: string, name: string) => {
+        if (joinInFlight) {
+            return joinInFlight;
+        }
+
+        joinInFlight = (async () => {
         state.status = 'JOINING';
         try {
             state.studentName = name;
@@ -90,6 +99,7 @@ export const useStudentStore = () => {
 
             state.quizId = code;
             state.sessionId = email; // Use email as session ID
+            sessionRegistered = false;
 
             // 1. Listen to Quiz Updates
             onSnapshot(quizRef, (doc) => {
@@ -108,11 +118,16 @@ export const useStudentStore = () => {
             console.error('Join failed:', e);
             state.status = 'IDLE';
             alert('Failed to join session: ' + (e as Error).message);
+        } finally {
+            joinInFlight = null;
         }
+        })();
+
+        return joinInFlight;
     };
 
     const registerSession = async () => {
-        if (!state.quizId || !state.sessionId) return;
+        if (!state.quizId || !state.sessionId || sessionRegistered) return;
 
         // Skip for demo
         if (state.sessionId === 'demo_user') return;
@@ -128,6 +143,8 @@ export const useStudentStore = () => {
             connectedAt: serverTimestamp(),
             integrityAlerts: 0
         }, { merge: true });
+
+        sessionRegistered = true;
     };
 
     const updateProgress = async () => {
@@ -172,36 +189,44 @@ export const useStudentStore = () => {
             totalQuestions: state.quizData?.questions?.length || 0,
             lastUpdated: serverTimestamp()
         }, { merge: true });
+
     };
 
     const submitAnswer = async (questionId: string, optionId: string, confidenceLvl: number) => {
-        state.answers[questionId] = optionId;
-        state.confidence[questionId] = confidenceLvl;
+        if (submitInFlight || state.status === 'SUBMITTED') return;
 
-        // Save progress to Firestore Response
-        await saveResponse();
+        submitInFlight = true;
+        try {
+            state.answers[questionId] = optionId;
+            state.confidence[questionId] = confidenceLvl;
 
-        // Advance
-        if (state.quizData && state.currentQuestionIndex < state.quizData.questions.length - 1) {
-            state.currentQuestionIndex++;
-            updateProgress(); // Fire and forget update
-        } else {
-            state.status = 'SUBMITTED';
-            // Only update Firestore if not demo
-            if (state.quizId && state.sessionId && state.sessionId !== 'demo_user') {
-                const sessionRef = getSessionRef();
-                await updateDoc(sessionRef, {
-                    status: 'completed', // Rules check 'completed' ? Rules check != 'blocked'
-                    progress: 100,
-                    lastActive: serverTimestamp()
-                });
+            // Save progress to Firestore Response
+            await saveResponse();
 
-                // Finalize response
-                const responseRef = getResponseRef();
-                await updateDoc(responseRef, {
-                    completedAt: serverTimestamp()
-                });
+            // Advance
+            if (state.quizData && state.currentQuestionIndex < state.quizData.questions.length - 1) {
+                state.currentQuestionIndex++;
+                await updateProgress();
+            } else {
+                state.status = 'SUBMITTED';
+                // Only update Firestore if not demo
+                if (state.quizId && state.sessionId && state.sessionId !== 'demo_user') {
+                    const sessionRef = getSessionRef();
+                    await updateDoc(sessionRef, {
+                        status: 'completed', // Rules check 'completed' ? Rules check != 'blocked'
+                        progress: 100,
+                        lastActive: serverTimestamp()
+                    });
+
+                    // Finalize response
+                    const responseRef = getResponseRef();
+                    await updateDoc(responseRef, {
+                        completedAt: serverTimestamp()
+                    });
+                }
             }
+        } finally {
+            submitInFlight = false;
         }
     };
 
