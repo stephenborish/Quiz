@@ -160,6 +160,7 @@ Rules must be deployed separately from Apps Script:
 
 ## 📖 Documentation
 
+- 🤖 **[GitHub Actions GAS Deploy Setup](GITHUB_ACTIONS_SETUP.md)** - Configure automatic push to Apps Script
 - 📱 **[DEPLOYMENT-MOBILE.md](DEPLOYMENT-MOBILE.md)** - Phone-friendly deployment
 - 🔑 **[SETUP-GITHUB-SECRET.md](SETUP-GITHUB-SECRET.md)** - One-time GitHub setup
 - 💻 **[DEPLOYMENT.md](DEPLOYMENT.md)** - Desktop deployment guide
