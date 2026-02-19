@@ -1,0 +1,59 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and prepare GAS artifacts
+        run: npm run deploy:gas
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Configure clasp credentials
+        env:
+          CLASP_CREDENTIALS_JSON: ${{ secrets.CLASP_CREDENTIALS_JSON }}
+        run: |
+          if [ -z "$CLASP_CREDENTIALS_JSON" ]; then
+            echo "Missing secret: CLASP_CREDENTIALS_JSON"
+            exit 1
+          fi
+          echo "$CLASP_CREDENTIALS_JSON" > ~/.clasprc.json
+
+      - name: Configure clasp project
+        env:
+          APPS_SCRIPT_SCRIPT_ID: ${{ secrets.APPS_SCRIPT_SCRIPT_ID }}
+        run: |
+          if [ -z "$APPS_SCRIPT_SCRIPT_ID" ]; then
+            echo "Missing secret: APPS_SCRIPT_SCRIPT_ID"
+            exit 1
+          fi
+          cat > dist/.clasp.json <<EOF
+          {
+            "scriptId": "$APPS_SCRIPT_SCRIPT_ID",
+            "rootDir": "./"
+          }
+          EOF
+
+      - name: Push to Apps Script
+        working-directory: dist
+        run: clasp push --force
